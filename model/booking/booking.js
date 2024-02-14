@@ -103,6 +103,12 @@ const userLocationSchema = new mongoose.Schema({
   totalDistance: {
     type: String,
   },
+  price: {
+    type: String,
+  },
+  additional: {
+    type: String,
+  },
   totalPrice: {
     type: String,
   },

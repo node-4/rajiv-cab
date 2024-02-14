@@ -159,7 +159,7 @@ exports.createSuperCarBooking = async (req, res) => {
 };
 exports.createHourlyBooking = async (req, res) => {
     try {
-        const { vehicleId, serviceCategory, distance, date, time, current, drop, hour } = req.body;
+        const { vehicleId, city, distance, date, time, current, drop, hour } = req.body;
         const user = await User.findById(req.user.id);
         if (!user) {
             return res.status(404).send({ status: 404, message: "user not found ", data: {} });
@@ -234,36 +234,58 @@ exports.createBooking = async (req, res) => {
         const { vehicleId, city, distance, date, time, current, drop, hour } = req.body;
         const user = await User.findById(req.user.id);
         if (!user) {
-            return res.status(404).send({ status: 404, message: "user not found ", data: {} });
+            return res.status(404).send({ status: 404, message: "User not found", data: {} });
         }
-        const findPrivacy2 = await cityModel.findOne({ city: city });
+        const carId = await vehicle.findById(vehicleId);
+        if (!carId) {
+            return res.status(404).json({ status: 404, message: 'Vehicle not found', data: {} });
+        }
+        const findPrivacy2 = await cityModel.findOne({ city });
         if (!findPrivacy2) {
-            return res.status(404).json({ status: 404, message: 'Category  not found for the specified type', data: {} });
+            return res.status(404).json({ status: 404, message: 'City not found', data: {} });
         }
-        let pricingDetails = await basePricing.findOne({ vehicle: vehicle, city: findPrivacy2._id, });
+        let pricingDetails = await basePricing.findOne({ vehicle: carId._id, city: findPrivacy2._id });
         if (!pricingDetails) {
             return res.status(404).json({ success: false, message: 'No pricing details found for the selected car type' });
         }
-        let pricingDetails1 = await dailyPricing.findOne({ vehicle: vehicle, city: findPrivacy2._id, toKm: { $gte: distance }, fromKm: { $lte: distance } });
-        if (!pricingDetails1) {
-            return res.status(404).json({ success: false, message: 'No pricing details found for the selected car type' });
+        let totalCharges = 0;
+        let remainingDistance = distance;
+        const pricingDetails1 = await dailyPricing.find({ vehicle: carId._id, city: findPrivacy2._id });
+        console.log(pricingDetails1)
+        pricingDetails1.sort((a, b) => a.fromKm - b.fromKm);
+        for (let slab of pricingDetails1) {
+            if (remainingDistance <= 0) {
+                break;
+            }
+            const slabDistance = Math.min(slab.toKm, remainingDistance) - slab.fromKm + 1;
+            totalCharges += slabDistance * slab.price;
+            remainingDistance -= slabDistance;
+            if (remainingDistance <= 0) {
+                break; // No need to continue if remaining distance is 0 or negative
+            }
         }
-        const carId = await vehicle.findById({ _id: vehicleId });
-        if (!carId) {
-            return res.status(404).json({ status: 404, message: 'Data not found for the specified type', data: {} });
-        }
-        let totalCharges = (pricingDetails1.price * km) + pricingDetails.basePrice + pricingDetails.taxRate + pricingDetails.gstRate + pricingDetails.serviceCharge + pricingDetails.nightCharges + pricingDetails.waitingCharge + pricingDetails.trafficCharge;
-        const booking = await Booking.create({ userId: user._id, current, drop, distance, hour, car: carId._id, date, time, totalPrice: totalCharges });
+        return
+        let additionalCharges = pricingDetails.basePrice + pricingDetails.taxRate + pricingDetails.gstRate + pricingDetails.serviceCharge + pricingDetails.nightCharges + pricingDetails.waitingCharge + pricingDetails.trafficCharge;
+        let totalPrice = totalCharges + additionalCharges;
+        const booking = await Booking.create({
+            userId: user._id,
+            current,
+            drop,
+            distance,
+            hour,
+            car: carId._id,
+            date,
+            time,
+            totalPrice,
+            additionalCharges,
+            price: totalCharges
+        });
         return res.status(201).json(booking);
     } catch (error) {
         console.error(error);
         return res.status(500).json({ status: 500, message: 'Server error', data: error });
     }
 };
-
-
-
-
 /////////////////////////////// pending check and update //////////////////////////
 exports.popularLocation = async (req, res) => {
     try {
