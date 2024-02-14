@@ -192,20 +192,26 @@ exports.driverImage = async (req, res) => {
                 console.log(id);
                 console.log("Request Body:", req.body);
                 console.log("Request Files:", req.files);
+                let findData = await DriverDetail.findOne({ driver: id });
+                if (!findData) {
+                        return res.status(404).json({ error: "DriverDetail not found" });
+                }
                 const updatedDetails = {
-                        interior: req.fileUrls.interior || detail.interior,
-                        exterior: req.fileUrls.exterior || detail.exterior,
-                        permit: req.fileUrls.permit || detail.permit,
-                        fitness: req.fileUrls.fitness || detail.fitness,
-                        insurance: req.fileUrls.insurance || detail.insurance,
-                        aadharCard: req.fileUrls.aadharCard || detail.aadharCard,
-                        drivinglicense: req.fileUrls.drivinglicense || detail.drivinglicense,
-                        cancelCheck: req.fileUrls.cancelCheck || detail.cancelCheck,
-                        bankStatement: req.fileUrls.bankStatement || detail.bankStatement,
-                        rc: req.fileUrls.rc || detail.rc,
+                        interior: req.fileUrls.interior,
+                        exterior: req.fileUrls.exterior,
+                        permit: req.fileUrls.permit,
+                        fitness: req.fileUrls.fitness,
+                        insurance: req.fileUrls.insurance,
+                        aadharCard: req.fileUrls.aadharCard,
+                        drivinglicense: req.fileUrls.drivinglicense,
+                        cancelCheck: req.fileUrls.cancelCheck,
+                        bankStatement: req.fileUrls.bankStatement,
+                        rc: req.fileUrls.rc
                 };
-                const updatedDriver = await DriverDetail.findOneAndUpdate({ driver: id }, updatedDetails, { new: true });
-                return res.status(200).json({ message: "Details updated successfully.", status: 200, data: updatedDriver, });
+                const updatedDriver = await DriverDetail.findOneAndUpdate({ driver: id }, { $set: updatedDetails }, { new: true });
+                if (updatedDriver) {
+                        return res.status(200).json({ message: "Details updated successfully.", status: 200, data: updatedDriver, });
+                }
         } catch (error) {
                 console.error("Error:", error);
                 return res.status(500).json({ status: 500, message: "Internal server error", data: error.message, });
