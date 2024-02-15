@@ -11,6 +11,9 @@ const pricingSchema = new mongoose.Schema({
   price: {
     type: Number,
   },
+  // time
+  // km
+  // isActive: true/false
 },
   { timestamps: true }
 );
