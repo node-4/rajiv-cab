@@ -9,9 +9,9 @@ const driverDetailSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "city",
   },
-  vehicle: {
+  driverVehicleCategory: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "vehicle",
+    ref: "driverVehicleCategory",
   },
   dlno: {
     type: String,
@@ -300,10 +300,5 @@ const driverDetailSchema = new mongoose.Schema({
   },
 });
 driverDetailSchema.index({ location: '2dsphere' });
-// Add other driver details fields as needed
-//   },
-// });
-
 const DriverDetail = mongoose.model("DriverDetail", driverDetailSchema);
-
 module.exports = DriverDetail;

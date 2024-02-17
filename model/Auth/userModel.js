@@ -1,10 +1,16 @@
 const mongoose = require("mongoose");
-
-// Define the User schema
 const userSchema = new mongoose.Schema({
-  category: {
+  driverVehicleCategory: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "genderCategory",
+    ref: "driverVehicleCategory",
+  },
+  driverDocument: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "DriverDetail",
+  },
+  type: {
+    type: String,
+    enum: ["vehicle", "superCar", "vehicleAmbulance"]
   },
   mobileNumber: {
     type: String,
@@ -42,6 +48,7 @@ const userSchema = new mongoose.Schema({
   },
   status: {
     type: String,
+    enum: ['pending', 'approved', 'reject', 'hold'],
     default: 'pending',
   },
   profilePicture: {
@@ -65,6 +72,10 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  cashInHand: {
+    type: Number,
+    default: 0,
+  },
   createdAt: {
     type: Date,
     default: Date.now,
@@ -82,7 +93,5 @@ const userSchema = new mongoose.Schema({
   },
 });
 userSchema.index({ location: '2dsphere' });
-// Create the User model
 const User = mongoose.model("User", userSchema);
-
 module.exports = User;

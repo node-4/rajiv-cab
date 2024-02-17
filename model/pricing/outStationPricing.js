@@ -11,9 +11,26 @@ const pricingSchema = new mongoose.Schema({
   price: {
     type: Number,
   },
-  // time
-  // km
-  // isActive: true/false
+  kmLimit: {
+    type: Number,
+  },
+  kmPrice: {
+    type: Number,
+  },
+  hrPrice: {
+    type: Number,
+  },
+  hrLimit: {
+    type: Number,
+  },
+  type: {
+    type: String,
+    enum: ["oneSide", "bothSide"]
+  },
+  isActive: {
+    type: Boolean,
+    default: true,
+  },
 },
   { timestamps: true }
 );

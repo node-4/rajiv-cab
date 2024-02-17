@@ -15,10 +15,22 @@ const pricingSchema = new mongoose.Schema({
   price: {
     type: Number,
   },
-  // kmLimit
-  // hrPrice
-  // kmPrice
-  // hrLimit
+  kmLimit: {
+    type: Number,
+  },
+  kmPrice: {
+    type: Number,
+  },
+  hrPrice: {
+    type: Number,
+  },
+  hrLimit: {
+    type: Number,
+  },
+  isActive: {
+    type: Boolean,
+    default: true,
+  }
 }, { timestamps: true });
 const Pricing = mongoose.model("pricingSuperCar", pricingSchema);
 module.exports = Pricing;

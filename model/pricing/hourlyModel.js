@@ -17,6 +17,10 @@ const pricingSchema = new mongoose.Schema({
         hours: {
                 type: Number,
         },
+        isActive: {
+                type: Boolean,
+                default: true,
+        },
 }, { timestamps: true });
 const Pricing = mongoose.model("pricingHourly", pricingSchema);
 module.exports = Pricing;

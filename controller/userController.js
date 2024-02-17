@@ -2,6 +2,7 @@ const User = require("../model/Auth/userModel");
 const randomatic = require("randomatic");
 const jwt = require("jsonwebtoken");
 const genderCategory = require("../model/Category/genderCategory");
+const vehicleAmbulance = require('../model/Vehical/vehicleAmbulance');
 const DriverDetail = require("../model/Auth/driverDetail");
 const Booking = require("../model/booking/booking");
 const Pricing = require("../model/pricing/dailyPricing");
@@ -150,7 +151,7 @@ exports.createSuperCarBooking = async (req, res) => {
             return res.status(404).json({ success: false, message: 'No pricing details found for the selected car type' });
         }
         totalCharges = pricingDetails.price;
-        const booking = await Booking.create({ userId: user._id, current, superCar: pricingDetails.superCar, type: "superCar", time: time, drop, date, totalPrice: totalCharges });
+        const booking = await Booking.create({ userId: user._id, current, superCar: pricingDetails.superCar, type: "superCar", serviceType: "superCar", time: time, drop, date, totalPrice: totalCharges });
         return res.status(201).json(booking);
     } catch (error) {
         console.error(error);
@@ -177,7 +178,7 @@ exports.createHourlyBooking = async (req, res) => {
             return res.status(404).json({ success: false, message: 'No pricing details found for the selected car type' });
         }
         totalCharges = pricingDetails.price;
-        const booking = await Booking.create({ userId: user._id, current, type: "Hourly", car: carId._id, drop, distance, hour, date, time, totalPrice: totalCharges });
+        const booking = await Booking.create({ userId: user._id, current, type: "Hourly", serviceType: "Hourly", car: carId._id, drop, distance, hour, date, time, totalPrice: totalCharges });
         return res.status(201).json(booking);
     } catch (error) {
         console.error(error);
@@ -231,7 +232,7 @@ exports.cancelBooking = async (req, res) => {
 };
 exports.createBooking = async (req, res) => {
     try {
-        const { vehicleId, city, distance, date, time, current, drop, hour } = req.body;
+        const { vehicleId, city, distance, date, time, current, drop, hour, serviceType } = req.body;
         const user = await User.findById(req.user.id);
         if (!user) {
             return res.status(404).send({ status: 404, message: "User not found", data: {} });
@@ -248,23 +249,24 @@ exports.createBooking = async (req, res) => {
         if (!pricingDetails) {
             return res.status(404).json({ success: false, message: 'No pricing details found for the selected car type' });
         }
+        function calculatePricing(distance, slabs) {
+            let totalPricing = 0;
+            let lastToKm = 0;
+            for (let i = 0; i < slabs.length; i++) {
+                if (distance > slabs[i].toKm) {
+                    totalPricing += (slabs[i].toKm - lastToKm) * slabs[i].price;
+                    lastToKm = slabs[i].toKm;
+                } else if (distance >= slabs[i].fromKm) {
+                    totalPricing += (distance - lastToKm) * slabs[i].price;
+                    break;
+                }
+            }
+            return totalPricing;
+        }
         let totalCharges = 0;
-        let remainingDistance = distance;
         const pricingDetails1 = await dailyPricing.find({ vehicle: carId._id, city: findPrivacy2._id });
         console.log(pricingDetails1)
-        pricingDetails1.sort((a, b) => a.fromKm - b.fromKm);
-        for (let slab of pricingDetails1) {
-            if (remainingDistance <= 0) {
-                break;
-            }
-            const slabDistance = Math.min(slab.toKm, remainingDistance) - slab.fromKm + 1;
-            totalCharges += slabDistance * slab.price;
-            remainingDistance -= slabDistance;
-            if (remainingDistance <= 0) {
-                break; // No need to continue if remaining distance is 0 or negative
-            }
-        }
-        return
+        totalCharges = calculatePricing(distance, pricingDetails1)
         let additionalCharges = pricingDetails.basePrice + pricingDetails.taxRate + pricingDetails.gstRate + pricingDetails.serviceCharge + pricingDetails.nightCharges + pricingDetails.waitingCharge + pricingDetails.trafficCharge;
         let totalPrice = totalCharges + additionalCharges;
         const booking = await Booking.create({
@@ -277,6 +279,41 @@ exports.createBooking = async (req, res) => {
             date,
             time,
             totalPrice,
+            serviceType,
+            additionalCharges,
+            price: totalCharges
+        });
+        return res.status(201).json(booking);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ status: 500, message: 'Server error', data: error });
+    }
+};
+exports.createAmbulanceBooking = async (req, res) => {
+    try {
+        const { vehicleId, distance, date, time, current, drop, hour } = req.body;
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).send({ status: 404, message: "User not found", data: {} });
+        }
+        const pricingDetails = await vehicleAmbulance.findById(vehicleId);
+        if (!pricingDetails) {
+            return res.status(404).json({ status: 404, message: 'Vehicle not found', data: {} });
+        }
+        let totalCharges = pricingDetails.perKm * distance;
+        let additionalCharges = pricingDetails.basePrice + pricingDetails.taxRate + pricingDetails.gstRate + pricingDetails.serviceCharge + pricingDetails.nightCharges + pricingDetails.waitingCharge + pricingDetails.trafficCharge;
+        let totalPrice = totalCharges + additionalCharges;
+        const booking = await Booking.create({
+            userId: user._id,
+            current,
+            drop,
+            distance,
+            hour,
+            vehicleAmbulance: pricingDetails._id,
+            date,
+            time,
+            totalPrice,
+            serviceType: 'ambulance',
             additionalCharges,
             price: totalCharges
         });

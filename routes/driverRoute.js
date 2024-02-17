@@ -38,13 +38,14 @@ module.exports = (app) => {
   app.post("/api/v1/driver/verify/login", driverController.verifyOtpLogin);
   app.post("/api/v1/driver/resend/otp", driverController.resendOTP);
   app.post("/api/v1/driver/google/login", driverController.socialLogin);
+  app.get("/api/v1/driver/getDriverVehicleCategory", driverController.getDriverVehicleCategory);
   app.get("/api/v1/driver/me", authJwt.verifyToken, driverController.getDriverDetails);
   app.put("/api/v1/driver/detail", authJwt.verifyToken, upload.single('profilePicture'), driverController.updateDriverProfile);
   app.post("/api/v1/driver/detail/driver", authJwt.verifyToken, driverController.documentDriverDetail);
   app.post("/api/v1/driver/image/:id", uploadDriverImages, driverController.driverImage);
   app.get("/api/v1/driver/my/car/detail/:driverId", driverController.allDriverDetail);
   app.put("/api/v1/driver/detail/location", authJwt.verifyToken, driverController.updateLocation);
-  app.get("/api/v1/driver/latest/booking", driverController.latestBooking);
+  app.get("/api/v1/driver/latest/booking", authJwt.verifyToken, driverController.latestBooking);
   app.put("/api/v1/driver/stop/booking/:bookingId", authJwt.verifyToken, driverController.stopBooking);
   app.put("/api/v1/driver/accept/booking/:bookingId", authJwt.verifyToken, driverController.acceptBooking);
   app.post("/api/v1/driver/sendOtpToUserBooking/:bookingId", authJwt.verifyToken, driverController.sendOtpToUserBooking);

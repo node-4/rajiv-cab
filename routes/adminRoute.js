@@ -22,6 +22,7 @@ module.exports = (app) => {
   app.get("/api/v1/admin/all/user", adminController.allUser);
   app.delete("/api/v1/admin/delete/driver/:id", adminController.deleteDriver);
   app.put("/api/v1/admin/block/driver/:id", adminController.blockDriver);
+  app.put("/api/v1/admin/Kyc/driver/:id", adminController.driverKycAcceptRejectHold);
   app.put("/api/v1/admin/unblock/driver/:id", adminController.unblockDriver);
   app.post('/api/v1/banner', upload.single('image'), adminController.AddBanner);
   app.get('/api/v1/banner/', adminController.getBanner);

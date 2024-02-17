@@ -18,6 +18,7 @@ const superCarPricing = require('../model/pricing/superCarPricing');
 const superCar = require('../model/Vehical/superCar')
 const vehicle = require('../model/Vehical/vehicleModel');
 const vehicleAmbulance = require('../model/Vehical/vehicleAmbulance');
+const driverVehicalCategory = require('../model/Vehical/driverVehicalCategory');
 const cityModel = require('../model/cityState/cityModel')
 const stateModel = require('../model/cityState/state')
 const settleBooking = require("../model/booking/settleBooking");
@@ -219,6 +220,21 @@ exports.blockDriver = async (req, res) => {
                         return res.status(404).json({ status: 404, message: "driver not found ", category: {} })
                 }
                 existingDriver.isBlock = true;
+                await existingDriver.save();
+                return res.json({ status: 200, message: "Driver is blocked successfully" });
+        } catch (error) {
+                console.error(error);
+                return res.status(500).json({ message: "Server error" });
+        }
+};
+exports.driverKycAcceptRejectHold = async (req, res) => {
+        try {
+                const driverId = req.params.id;
+                const existingDriver = await User.findById(driverId);
+                if (!existingDriver) {
+                        return res.status(404).json({ status: 404, message: "driver not found ", category: {} })
+                }
+                existingDriver.status = req.body.status;
                 await existingDriver.save();
                 return res.json({ status: 200, message: "Driver is blocked successfully" });
         } catch (error) {
@@ -577,6 +593,12 @@ exports.addVehicle = async (req, res) => {
                         }
                         const vehicleData = await vehicle.create({ name: req.body.name, image: image, type: req.body.type });
                         if (vehicleData) {
+                                let obj = {
+                                        vehicle: vehicleData._id,
+                                        name: req.body.name,
+                                        type: 'vehicle',
+                                }
+                                const pricing1 = await driverVehicalCategory.create(obj);
                                 return res.status(200).json({ status: 200, message: "Vehicle added successfully", data: vehicleData });
                         }
                 } else {
@@ -592,6 +614,12 @@ exports.addVehicle = async (req, res) => {
                         }
                         const vehicleData = await vehicle.create({ name: req.body.name, image: image, type: req.body.type });
                         if (vehicleData) {
+                                let obj = {
+                                        vehicle: vehicleData._id,
+                                        name: req.body.name,
+                                        type: 'vehicle',
+                                }
+                                const pricing1 = await driverVehicalCategory.create(obj);
                                 return res.status(200).json({ status: 200, message: "Vehicle added successfully", data: vehicleData });
                         }
                 }
@@ -640,6 +668,12 @@ exports.updateVehicle = async (req, res) => {
                 }
                 const updatedVehicle = await vehicle.findOneAndUpdate({ _id: req.params.id }, { name: req.body.name || banner.name, image: image, type: req.body.type || banner.type }).exec();
                 if (updatedVehicle) {
+                        let obj1 = {
+                                vehicle: updatedVehicle._id,
+                                name: updatedVehicle.name,
+                                type: 'vehicle',
+                        }
+                        await driverVehicalCategory.findOneAndUpdate({ vehicle: updatedVehicle._id }, { $set: obj1 }, { new: true, runValidators: true, });
                         return res.status(200).json({ status: 200, message: "Vehicle updated successfully", data: updatedVehicle });
                 } else {
                         return res.status(404).json({ status: 404, message: 'Vehicle data not found for the specified ID' });
@@ -658,6 +692,7 @@ exports.DeleteVehicle = async (req, res) => {
                 }
                 const result = await vehicle.deleteOne({ _id: id });
                 if (result.deletedCount > 0) {
+                        await driverVehicalCategory.deleteOne({ vehicle: req.params.id });
                         return res.status(200).json({ status: 200, message: "Vehicle deleted successfully" });
                 } else {
                         return res.status(404).json({ status: 404, message: 'Vehicle data not found for the specified ID' });
@@ -787,8 +822,26 @@ exports.addSuperCarPricing = async (req, res) => {
                                 }
                         }
                         req.body.image = image;
-                        const pricing = await superCarPricing.create(req.body);
-                        return res.status(201).json({ success: true, data: pricing });
+                        let obj = {
+                                name: req.body.name,
+                                superCar: req.body.superCar,
+                                image: image,
+                                price: req.body.price,
+                                kmLimit: req.body.kmLimit,
+                                kmPrice: req.body.kmPrice,
+                                hrPrice: req.body.hrPrice,
+                                hrLimit: req.body.hrLimit,
+                        }
+                        const pricing = await superCarPricing.create(obj);
+                        if (pricing) {
+                                let obj = {
+                                        superCar: pricing._id,
+                                        name: req.body.name,
+                                        type: 'superCar',
+                                }
+                                const pricing1 = await driverVehicalCategory.create(obj);
+                                return res.status(201).json({ success: true, data: pricing });
+                        }
                 }
         } catch (error) {
                 console.error("Error creating pricing:", error);
@@ -843,9 +896,19 @@ exports.updateSuperCarPricing = async (req, res) => {
                         name: req.body.name || findPricing.name,
                         image: image,
                         price: req.body.price || findPricing.price,
+                        kmLimit: req.body.kmLimit || findPricing.kmLimit,
+                        kmPrice: req.body.kmPrice || findPricing.kmPrice,
+                        hrPrice: req.body.hrPrice || findPricing.hrPrice,
+                        hrLimit: req.body.hrLimit || findPricing.hrLimit,
                 }
                 const pricing = await superCarPricing.findByIdAndUpdate({ _id: findPricing._id }, { $set: obj }, { new: true, runValidators: true, });
                 if (pricing) {
+                        let obj1 = {
+                                superCar: pricing._id,
+                                name: pricing.name,
+                                type: 'superCar',
+                        }
+                        await driverVehicalCategory.findOneAndUpdate({ superCar: findPricing._id }, { $set: obj1 }, { new: true, runValidators: true, });
                         return res.status(200).json({ success: true, data: pricing });
                 }
         } catch (error) {
@@ -859,6 +922,7 @@ exports.deleteSuperCarPricing = async (req, res) => {
                 if (!pricing) {
                         return res.status(404).json({ success: false, error: 'Pricing not found' });
                 }
+                await driverVehicalCategory.deleteOne({ superCar: req.params.id });
                 return res.status(200).json({ success: true, data: {} });
         } catch (error) {
                 console.error('Error deleting pricing:', error);
@@ -1624,11 +1688,21 @@ exports.addOutStationPricing = async (req, res) => {
                 if (!findPrivacy2) {
                         return res.status(404).json({ status: 404, message: 'Category  not found for the specified type', data: {} });
                 }
-                let findHourlyPricing = await outStationPricing.findOne({ vehicle: req.body.vehicle, city: req.body.city, });
+                let findHourlyPricing = await outStationPricing.findOne({ vehicle: req.body.vehicle, city: req.body.city, type: req.body.type });
                 if (findHourlyPricing) {
                         return res.status(409).json({ message: "pricing already exit.", status: 404, data: {} });
                 } else {
-                        const pricing = await outStationPricing.create(req.body);
+                        let obj = {
+                                vehicle: req.body.vehicle,
+                                city: req.body.city,
+                                type: req.body.type,
+                                price: req.body.price,
+                                kmLimit: req.body.kmLimit,
+                                kmPrice: req.body.kmPrice,
+                                hrPrice: req.body.hrPrice,
+                                hrLimit: req.body.hrLimit,
+                        }
+                        const pricing = await outStationPricing.create(obj);
                         return res.status(201).json({ success: true, data: pricing });
                 }
         } catch (error) {
@@ -1787,14 +1861,19 @@ exports.addAmbulanceVehicle = async (req, res) => {
                 if (data) {
                         return res.status(200).json({ status: 200, message: 'Data already exit.', data: data });
                 }
-                let image;
                 if (req.file) {
-                        image = req.file.path;
+                        req.body.image = req.file.path;
                 } else {
                         return res.status(404).json({ status: 404, message: "Ambulance vehicle image choose first", data: vehicleData });
                 }
-                const vehicleData = await vehicleAmbulance.create({ name: req.body.name, image: image, });
+                const vehicleData = await vehicleAmbulance.create(req.body);
                 if (vehicleData) {
+                        let obj = {
+                                vehicleAmbulance: vehicleData._id,
+                                name: req.body.name,
+                                type: 'vehicleAmbulance',
+                        }
+                        const pricing1 = await driverVehicalCategory.create(obj);
                         return res.status(200).json({ status: 200, message: "Ambulance vehicle added successfully", data: vehicleData });
                 }
         } catch (error) {
@@ -1840,8 +1919,27 @@ exports.updateAmbulanceVehicle = async (req, res) => {
                 } else {
                         image = banner.image;
                 }
-                const updatedVehicle = await vehicleAmbulance.findOneAndUpdate({ _id: req.params.id }, { name: req.body.name || banner.name, image: image, type: req.body.type || banner.type }).exec();
+                let obj = {
+                        name: req.body.name || banner.name,
+                        image: image,
+                        type: req.body.type || banner.type,
+                        perKm: req.body.perKm || banner.perKm,
+                        basePrice: req.body.basePrice || banner.basePrice,
+                        taxRate: req.body.taxRate || banner.taxRate,
+                        gstRate: req.body.gstRate || banner.gstRate,
+                        serviceCharge: req.body.serviceCharge || banner.serviceCharge,
+                        nightCharges: req.body.nightCharges || banner.nightCharges,
+                        waitingCharge: req.body.waitingCharge || banner.waitingCharge,
+                        trafficCharge: req.body.trafficCharge || banner.trafficCharge,
+                }
+                const updatedVehicle = await vehicleAmbulance.findOneAndUpdate({ _id: req.params.id }, { obj }).exec();
                 if (updatedVehicle) {
+                        let obj1 = {
+                                vehicleAmbulance: updatedVehicle._id,
+                                name: updatedVehicle.name,
+                                type: 'vehicleAmbulance',
+                        }
+                        await driverVehicalCategory.findOneAndUpdate({ vehicleAmbulance: updatedVehicle._id }, { $set: obj1 }, { new: true, runValidators: true, });
                         return res.status(200).json({ status: 200, message: "Vehicle updated successfully", data: updatedVehicle });
                 } else {
                         return res.status(404).json({ status: 404, message: 'Vehicle data not found for the specified ID' });
@@ -1860,6 +1958,7 @@ exports.DeleteAmbulanceVehicle = async (req, res) => {
                 }
                 const result = await vehicleAmbulance.deleteOne({ _id: id });
                 if (result.deletedCount > 0) {
+                        await driverVehicalCategory.deleteOne({ vehicleAmbulance: req.params.id });
                         return res.status(200).json({ status: 200, message: "Vehicle deleted successfully" });
                 } else {
                         return res.status(404).json({ status: 404, message: 'Vehicle data not found for the specified ID' });

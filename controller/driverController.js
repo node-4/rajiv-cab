@@ -2,6 +2,7 @@ const User = require("../model/Auth/userModel");
 const DriverDetail = require("../model/Auth/driverDetail");
 const Booking = require("../model/booking/booking");
 const settleBooking = require("../model/booking/settleBooking");
+const driverVehicleCategory = require("../model/Vehical/driverVehicalCategory");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const randomatic = require("randomatic");
@@ -159,27 +160,42 @@ exports.updateDriverProfile = async (req, res) => {
 };
 exports.documentDriverDetail = async (req, res) => {
         try {
+                const user = await User.findById({ _id: req.user._id });
+                if (!user) {
+                        return res.status(404).json({ error: "User not found" });
+                }
+                req.body.driver = req.user._id;
+                const data12 = await driverVehicleCategory.findById({ _id: req.body.driverVehicleCategory });
+                if (!data12) {
+                        return res.status(404).json({ error: "DriverVehicle Category not found" });
+                }
                 let findData = await DriverDetail.findOne({ driver: req.user._id });
                 if (findData) {
                         const data = {
-                                driver: req.user._id,
-                                city: req.body.city,
-                                vehicle: req.body.vehicle,
                                 ...req.body,
                         };
                         console.log("Processed Data:", data);
                         const detail = await DriverDetail.findOneAndUpdate({ driver: req.user._id }, { $set: data }, { new: true });
-                        return res.status(200).json({ status: 200, message: "Driver Details added successfully.", data: detail, });
+                        if (detail) {
+                                user.driverDocument = detail._id;
+                                user.driverVehicleCategory = req.body.driverVehicleCategory;
+                                user.type = data12.type;
+                                await user.save();
+                                return res.status(200).json({ status: 200, message: "Driver Details added successfully.", data: detail, });
+                        }
                 } else {
                         const data = {
-                                driver: req.user._id,
-                                city: req.body.city,
-                                vehicle: req.body.vehicle,
                                 ...req.body,
                         };
                         console.log("Processed Data:", data);
                         const detail = await DriverDetail.create(data);
-                        return res.status(200).json({ status: 200, message: "Driver Details added successfully.", data: detail, });
+                        if (detail) {
+                                user.driverDocument = detail._id;
+                                user.driverVehicleCategory = req.body.driverVehicleCategory;
+                                user.type = data12.type;
+                                await user.save();
+                                return res.status(200).json({ status: 200, message: "Driver Details added successfully.", data: detail, });
+                        }
                 }
         } catch (error) {
                 console.error("Error:", error);
@@ -248,11 +264,31 @@ exports.updateLocation = async (req, res) => {
 };
 exports.latestBooking = async (req, res) => {
         try {
-                const latestBookings = await Booking.find({ status: "pending", }).sort({ createdAt: -1 });
-                if (latestBookings.length == 0) {
-                        return res.status(404).json({ status: 404, message: "Data not found", data: {} });
+                const user = await User.findById(req.user.id).populate('driverVehicleCategory');
+                if (!user) {
+                        return res.status(404).json({ error: "User not found" });
                 }
-                return res.status(200).json({ status: 200, message: "Data found", data: latestBookings });
+                if (user.type == "vehicleAmbulance") {
+                        const latestBookings = await Booking.find({ status: "pending", vehicleAmbulance: user.driverVehicleCategory.vehicleAmbulance }).sort({ createdAt: -1 });
+                        if (latestBookings.length == 0) {
+                                return res.status(404).json({ status: 404, message: "Data not found", data: {} });
+                        }
+                        return res.status(200).json({ status: 200, message: "Data found", data: latestBookings });
+                }
+                if (user.type == "superCar") {
+                        const latestBookings = await Booking.find({ status: "pending", superCar: user.driverVehicleCategory.superCar }).sort({ createdAt: -1 });
+                        if (latestBookings.length == 0) {
+                                return res.status(404).json({ status: 404, message: "Data not found", data: {} });
+                        }
+                        return res.status(200).json({ status: 200, message: "Data found", data: latestBookings });
+                }
+                if (user.type == "vehicle") {
+                        const latestBookings = await Booking.find({ status: "pending", car: user.driverVehicleCategory.vehicle }).sort({ createdAt: -1 });
+                        if (latestBookings.length == 0) {
+                                return res.status(404).json({ status: 404, message: "Data not found", data: {} });
+                        }
+                        return res.status(200).json({ status: 200, message: "Data found", data: latestBookings });
+                }
         } catch (error) {
                 console.error("Error:", error);
                 return res.status(500).json({ status: 500, message: "Internal server error", data: error.message, });
@@ -369,5 +405,17 @@ exports.getSettleBookingById = async (req, res) => {
         } catch (error) {
                 console.error(error);
                 return res.status(500).json({ status: 500, message: 'Server error', data: error });
+        }
+};
+exports.getDriverVehicleCategory = async (req, res) => {
+        try {
+                const data = await driverVehicleCategory.find();
+                if (data.length > 0) {
+                        return res.status(200).json({ status: 200, message: 'Data found', data: data });
+                } else {
+                        return res.status(404).json({ status: 404, message: 'No vehicle data found', data: {} });
+                }
+        } catch (err) {
+                return res.status(400).json({ status: 400, message: err.message });
         }
 };

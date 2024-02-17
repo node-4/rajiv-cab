@@ -7,6 +7,8 @@ module.exports = (app) => {
   app.post('/api/v1/user/login', userController.loginUser);
   app.get('/api/v1/user/me', authJwt.verifyToken, userController.getUserDetails);
   app.put('/api/v1/user/detail', authJwt.verifyToken, userController.updateProfile);
+  app.post("/api/v1/user/createBooking", authJwt.verifyToken, userController.createBooking);
+  app.post("/api/v1/user/createAmbulanceBooking", authJwt.verifyToken, userController.createAmbulanceBooking);
   app.post("/api/v1/user/createSettleBooking", authJwt.verifyToken, userController.createSettleBooking);
   app.post("/api/v1/user/createSuperCarBooking", authJwt.verifyToken, userController.createSuperCarBooking);
   app.post("/api/v1/user/createHourlyBooking", authJwt.verifyToken, userController.createHourlyBooking);
@@ -21,7 +23,6 @@ module.exports = (app) => {
 
 
   /////////////////////////////// pending check and update //////////////////////////
-  app.post("/api/v1/user/createBooking", authJwt.verifyToken, userController.createBooking);
   app.get("/api/v1/user/popularLocation", authJwt.verifyToken, userController.popularLocation);
   app.get("/api/v1/user/compare/car/:latitude/:longitude", userController.compareCars);
   app.get("/api/v1/user/get/order/:latitude/:longitude", authJwt.verifyToken, userController.getOrder);

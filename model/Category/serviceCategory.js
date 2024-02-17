@@ -16,7 +16,11 @@ const categorySchema = mongoose.Schema({
     type: {
         type: String,
         enum: ['Basic', 'Hourly', "Monthly", "superCar", "other"]
-    }
+    },
+    isActive: {
+        type: Boolean,
+        default: true,
+    },
 })
 const category = mongoose.model('serviceCategory', categorySchema);
 module.exports = category

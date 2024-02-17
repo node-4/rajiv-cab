@@ -10,7 +10,11 @@ const userLocationSchema = new mongoose.Schema({
   },
   superCar: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "superCar",
+    ref: "pricingSuperCar",
+  },
+  vehicleAmbulance: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "vehicleAmbulance",
   },
   car: {
     type: mongoose.Schema.Types.ObjectId,
@@ -67,8 +71,7 @@ const userLocationSchema = new mongoose.Schema({
   },
   serviceType: {
     type: String,
-    enum: ['general', 'bike', 'airport', 'outOfStation', 'delivery', 'auto', "ambulance"],
-    default: 'general',
+    enum: ['daily', 'bike', 'Hourly', 'airport', 'superCar', 'outOfStation', 'delivery', 'auto', "ambulance"],
   },
   startDateTime: {
     type: String,
@@ -88,13 +91,9 @@ const userLocationSchema = new mongoose.Schema({
   totalHour: {
     type: String,
   },
-  ambulance: {
-    type: String,
-    enum: ['normal', 'configuration'],
-  },
   type: {
     type: String,
-    enum: ['Basic', 'Hourly', 'superCar', 'other'],
+    enum: ['Basic', 'Hourly', 'superCar'],
     default: 'Basic',
   },
   distance: {
