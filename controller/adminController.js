@@ -198,6 +198,19 @@ exports.allUser = async (req, res) => {
                 return res.status(500).json({ success: false, error: "Internal Server Error" });
         }
 };
+exports.getUserById = async (req, res) => {
+        try {
+                const findPrivacy = await User.findById({ _id: req.params.id });
+                if (findPrivacy) {
+                        return res.status(200).json({ status: 200, message: 'Data found.', data: findPrivacy });
+                } else {
+                        return res.status(404).json({ status: 404, message: 'Data not found.', data: {} });
+                }
+        } catch (error) {
+                console.error(error);
+                return res.status(500).json({ status: 500, message: 'Server error', data: error });
+        }
+};
 exports.deleteDriver = async (req, res) => {
         try {
                 const driverId = req.params.id;

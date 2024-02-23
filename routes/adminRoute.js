@@ -15,6 +15,7 @@ module.exports = (app) => {
   app.put('/api/v1/admin/detail', authJwt.verifyToken, upload.single('profilePicture'), adminController.updateAdminProfile);
   app.post('/api/v1/category', adminController.addCategory);
   app.get('/api/v1/category', adminController.getCategory);
+  app.get('/api/v1/getUserById/:id', adminController.getUserById);
   app.put('/api/v1/category/:id', adminController.updateCategory);
   app.delete('/api/v1/category/:id', adminController.deleteCategory);
   app.get("/api/v1/admin/all/vendor", adminController.allVendor);
