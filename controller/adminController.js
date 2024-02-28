@@ -1400,7 +1400,7 @@ exports.addPricing = async (req, res) => {
 };
 exports.getPricing = async (req, res) => {
         try {
-                const pricing = await dailyPricing.find();
+                const pricing = await dailyPricing.find().populate('city vehicle');
                 if (pricing.length > 0) {
                         return res.status(200).json({ status: 200, message: 'Data found', data: pricing });
                 } else {
@@ -1470,7 +1470,7 @@ exports.AddHourlyPricing = async (req, res) => {
 };
 exports.getHourlyPricing = async (req, res) => {
         try {
-                const hourlyPricing = await hourlyModel.find();
+                const hourlyPricing = await hourlyModel.find().populate('city vehicle');;
                 if (hourlyPricing.length == 0) {
                         return res.status(404).json({ message: "HourlyPricing Not Found", status: 404, data: {} });
                 } else {
@@ -1725,7 +1725,7 @@ exports.addOutStationPricing = async (req, res) => {
 };
 exports.getOutStationPricing = async (req, res) => {
         try {
-                const pricing = await outStationPricing.find();
+                const pricing = await outStationPricing.find().populate('city vehicle');;
                 if (pricing.length > 0) {
                         return res.status(200).json({ status: 200, message: 'Data found', data: pricing });
                 } else {
@@ -1822,7 +1822,7 @@ exports.addBasePricing = async (req, res) => {
 };
 exports.getBasePricing = async (req, res) => {
         try {
-                const pricing = await basePricing.find();
+                const pricing = await basePricing.find().populate('city vehicle');;
                 if (pricing.length > 0) {
                         return res.status(200).json({ status: 200, message: 'Data found', data: pricing });
                 } else {
