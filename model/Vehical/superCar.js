@@ -8,7 +8,7 @@ const pricingSchema = new mongoose.Schema({
   },
   superCarPricing: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: "superCarPricing",
+    ref: "pricingSuperCar",
   }],
 }, { timestamps: true });
 const Pricing = mongoose.model("superCar", pricingSchema);

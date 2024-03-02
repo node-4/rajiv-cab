@@ -15,6 +15,7 @@ module.exports = (app) => {
   app.put('/api/v1/admin/detail', authJwt.verifyToken, upload.single('profilePicture'), adminController.updateAdminProfile);
   app.post('/api/v1/category', adminController.addCategory);
   app.get('/api/v1/category', adminController.getCategory);
+  app.get('/api/v1/category/:id', adminController.getCategoryById);
   app.get('/api/v1/getUserById/:id', adminController.getUserById);
   app.put('/api/v1/category/:id', adminController.updateCategory);
   app.delete('/api/v1/category/:id', adminController.deleteCategory);
@@ -57,6 +58,7 @@ module.exports = (app) => {
   app.get("/api/v1/Pricing", adminController.getPricing);
   app.post("/api/v1/Pricing/by/distance", authJwt.verifyToken, adminController.getPricingByDistance);
   app.post('/api/v1/AddHourlyPricing', adminController.AddHourlyPricing);
+  app.get("/api/v1/getHourlyPricingById/:id", adminController.getHourlyPricingById);
   app.get('/api/v1/getHourlyPricing', adminController.getHourlyPricing);
   app.put('/api/v1/updateHourlyPricing/:id', adminController.updateHourlyPricing);
   app.delete('/api/v1/removeHourlyPricing/:id', adminController.removeHourlyPricing);

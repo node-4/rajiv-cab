@@ -128,6 +128,19 @@ exports.getCategory = async (req, res) => {
                 return res.status(400).send({ mesage: err.mesage });
         }
 }
+exports.getCategoryById = async (req, res) => {
+        try {
+                const findPrivacy = await category.findById({ _id: req.params.id });
+                if (findPrivacy) {
+                        return res.status(200).json({ status: 200, message: 'Data found for the specified type', data: findPrivacy });
+                } else {
+                        return res.status(404).json({ status: 404, message: 'Data not found for the specified type', data: {} });
+                }
+        } catch (error) {
+                console.error(error);
+                return res.status(500).json({ status: 500, message: 'Server error', data: error });
+        }
+};
 exports.updateCategory = async (req, res) => {
         try {
                 const data = await category.findById({ _id: req.params.id });
@@ -1480,6 +1493,18 @@ exports.getHourlyPricing = async (req, res) => {
                 return res.status(500).json({ status: 500, message: "internal server error ", data: error.message, });
         }
 };
+exports.getHourlyPricingById = async (req, res) => {
+        try {
+                const pricing = await hourlyModel.findById(req.params.id).populate("vehicle city")
+                if (!pricing) {
+                        return res.status(404).json({ success: false, error: "HourlyPricing Not Found" });
+                }
+                return res.status(200).json({ message: "HourlyPricing Found", status: 200, data: pricing });
+        } catch (error) {
+                console.error("Error fetching pricing:", error);
+                return res.status(500).json({ success: false, error: "Failed to fetch pricing" });
+        }
+};
 exports.updateHourlyPricing = async (req, res) => {
         const { id } = req.params;
         const hourly = await hourlyModel.findById(id);
@@ -1927,6 +1952,7 @@ exports.updateAmbulanceVehicle = async (req, res) => {
                         return res.status(404).json({ message: "Vehicle Not Found", status: 404, data: {} });
                 }
                 let image;
+                console.log(req.file)
                 if (req.file) {
                         image = req.file.path;
                 } else {
@@ -1945,7 +1971,7 @@ exports.updateAmbulanceVehicle = async (req, res) => {
                         waitingCharge: req.body.waitingCharge || banner.waitingCharge,
                         trafficCharge: req.body.trafficCharge || banner.trafficCharge,
                 }
-                const updatedVehicle = await vehicleAmbulance.findOneAndUpdate({ _id: req.params.id }, { obj }).exec();
+                const updatedVehicle = await vehicleAmbulance.findOneAndUpdate({ _id: req.params.id }, { $set: obj }, { new: true });
                 if (updatedVehicle) {
                         let obj1 = {
                                 vehicleAmbulance: updatedVehicle._id,
