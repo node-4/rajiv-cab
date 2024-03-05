@@ -267,27 +267,31 @@ exports.latestBooking = async (req, res) => {
                 const user = await User.findById(req.user.id).populate('driverVehicleCategory');
                 if (!user) {
                         return res.status(404).json({ error: "User not found" });
-                }
-                if (user.type == "vehicleAmbulance") {
-                        const latestBookings = await Booking.find({ status: "pending", vehicleAmbulance: user.driverVehicleCategory.vehicleAmbulance }).sort({ createdAt: -1 });
-                        if (latestBookings.length == 0) {
-                                return res.status(404).json({ status: 404, message: "Data not found", data: {} });
+                } else {
+                        if (user.type == (null || undefined)) {
+                                return res.status(401).json({ status: 401, message: "First add vehicleCategory", data: {} });
                         }
-                        return res.status(200).json({ status: 200, message: "Data found", data: latestBookings });
-                }
-                if (user.type == "superCar") {
-                        const latestBookings = await Booking.find({ status: "pending", superCar: user.driverVehicleCategory.superCar }).sort({ createdAt: -1 });
-                        if (latestBookings.length == 0) {
-                                return res.status(404).json({ status: 404, message: "Data not found", data: {} });
+                        if (user.type == "vehicleAmbulance") {
+                                const latestBookings = await Booking.find({ status: "pending", vehicleAmbulance: user.driverVehicleCategory.vehicleAmbulance }).sort({ createdAt: -1 });
+                                if (latestBookings.length == 0) {
+                                        return res.status(404).json({ status: 404, message: "Data not found", data: {} });
+                                }
+                                return res.status(200).json({ status: 200, message: "Data found", data: latestBookings });
                         }
-                        return res.status(200).json({ status: 200, message: "Data found", data: latestBookings });
-                }
-                if (user.type == "vehicle") {
-                        const latestBookings = await Booking.find({ status: "pending", car: user.driverVehicleCategory.vehicle }).sort({ createdAt: -1 });
-                        if (latestBookings.length == 0) {
-                                return res.status(404).json({ status: 404, message: "Data not found", data: {} });
+                        if (user.type == "superCar") {
+                                const latestBookings = await Booking.find({ status: "pending", superCar: user.driverVehicleCategory.superCar }).sort({ createdAt: -1 });
+                                if (latestBookings.length == 0) {
+                                        return res.status(404).json({ status: 404, message: "Data not found", data: {} });
+                                }
+                                return res.status(200).json({ status: 200, message: "Data found", data: latestBookings });
                         }
-                        return res.status(200).json({ status: 200, message: "Data found", data: latestBookings });
+                        if (user.type == "vehicle") {
+                                const latestBookings = await Booking.find({ status: "pending", car: user.driverVehicleCategory.vehicle }).sort({ createdAt: -1 });
+                                if (latestBookings.length == 0) {
+                                        return res.status(404).json({ status: 404, message: "Data not found", data: {} });
+                                }
+                                return res.status(200).json({ status: 200, message: "Data found", data: latestBookings });
+                        }
                 }
         } catch (error) {
                 console.error("Error:", error);
