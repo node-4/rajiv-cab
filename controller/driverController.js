@@ -272,21 +272,21 @@ exports.latestBooking = async (req, res) => {
                                 return res.status(401).json({ status: 401, message: "First add vehicleCategory", data: {} });
                         }
                         if (user.type == "vehicleAmbulance") {
-                                const latestBookings = await Booking.find({ status: "pending", vehicleAmbulance: user.driverVehicleCategory.vehicleAmbulance }).sort({ createdAt: -1 });
+                                const latestBookings = await Booking.find({ status: "pending", vehicleAmbulance: user.driverVehicleCategory.vehicleAmbulance }).populate('userId car').sort({ createdAt: -1 });
                                 if (latestBookings.length == 0) {
                                         return res.status(404).json({ status: 404, message: "Data not found", data: {} });
                                 }
                                 return res.status(200).json({ status: 200, message: "Data found", data: latestBookings });
                         }
                         if (user.type == "superCar") {
-                                const latestBookings = await Booking.find({ status: "pending", superCar: user.driverVehicleCategory.superCar }).sort({ createdAt: -1 });
+                                const latestBookings = await Booking.find({ status: "pending", superCar: user.driverVehicleCategory.superCar }).populate('userId car').sort({ createdAt: -1 });
                                 if (latestBookings.length == 0) {
                                         return res.status(404).json({ status: 404, message: "Data not found", data: {} });
                                 }
                                 return res.status(200).json({ status: 200, message: "Data found", data: latestBookings });
                         }
                         if (user.type == "vehicle") {
-                                const latestBookings = await Booking.find({ status: "pending", car: user.driverVehicleCategory.vehicle }).sort({ createdAt: -1 });
+                                const latestBookings = await Booking.find({ status: "pending", car: user.driverVehicleCategory.vehicle }).populate('userId car').sort({ createdAt: -1 });
                                 if (latestBookings.length == 0) {
                                         return res.status(404).json({ status: 404, message: "Data not found", data: {} });
                                 }
