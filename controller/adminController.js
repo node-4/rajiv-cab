@@ -1557,41 +1557,59 @@ exports.getPricingByDistance = async (req, res) => {
                 const { distanceInKm, city } = req.body;
                 const userId = req.user;
                 const user = await User.findById(userId);
+
                 if (!user) {
                         return res.status(404).json({ success: false, message: 'User not found' });
                 }
-                const findPrivacy = await cityModel.findOne({ city: city });
+
+                const findPrivacy = await cityModel.findOne({ city });
+
                 if (!findPrivacy) {
                         return res.status(404).json({ success: false, message: 'City not found' });
                 }
-                const allPricingDetails = await dailyPricing.find().populate('vehicle');
-                console.log(allPricingDetails);
-                if (!allPricingDetails || allPricingDetails.length === 0) {
-                        return res.status(404).json({ success: false, message: 'No pricing details found' });
+
+                const pricingDetails = await basePricing.find({ city: findPrivacy._id }).populate('vehicle');
+
+                if (pricingDetails.length === 0) {
+                        return res.status(404).json({ success: false, message: 'No pricing details found for the selected city' });
                 }
-                const userCategory = user.category;
-                const filteredPricingDetails = allPricingDetails.filter(pricingDetails =>
-                        pricingDetails.genderCategory._id.toString() === userCategory.toString()
-                );
-                const prices = filteredPricingDetails.map((pricingDetails) => ({
-                        vehicle: pricingDetails.vehicle,
-                        distanceInKm: distanceInKm,
-                        totalPrice:
-                                pricingDetails.basePrice +
-                                pricingDetails.kmRate * distanceInKm +
-                                pricingDetails.taxRate +
-                                pricingDetails.gstRate +
-                                pricingDetails.serviceCharge +
-                                pricingDetails.nightCharges +
-                                pricingDetails.waitingCharge +
-                                pricingDetails.trafficCharge,
+
+                // Function to calculate pricing based on distance
+                function calculatePricing(distance, slabs, pricingDetail) {
+                        let totalPricing = 0;
+                        let lastToKm = 0;
+                        for (let i = 0; i < slabs.length; i++) {
+                                if (distance > slabs[i].toKm) {
+                                        totalPricing += (slabs[i].toKm - lastToKm) * slabs[i].price;
+                                        lastToKm = slabs[i].toKm;
+                                } else if (distance >= slabs[i].fromKm) {
+                                        totalPricing += (distance - lastToKm) * slabs[i].price;
+                                        break;
+                                }
+                        }
+                        return totalPricing + (pricingDetail.basePrice + pricingDetail.kmRate * distance + pricingDetail.taxRate + pricingDetail.gstRate + pricingDetail.serviceCharge + pricingDetail.nightCharges + pricingDetail.waitingCharge + pricingDetail.trafficCharge);
+                }
+
+                // Calculate prices for each vehicle
+                const prices = await Promise.all(pricingDetails.map(async (pricingDetail) => {
+                        const slabs = await dailyPricing.find({ city: findPrivacy._id, vehicle: pricingDetail.vehicle });
+                        const totalPrice = calculatePricing(distanceInKm, slabs, pricingDetail);
+                        return {
+                                vehicle: pricingDetail.vehicle,
+                                distanceInKm,
+                                totalPrice
+                        };
                 }));
+
                 return res.status(200).json({ success: true, message: 'Prices calculated successfully', data: prices });
         } catch (error) {
                 console.error(error);
                 return res.status(500).json({ success: false, message: 'Internal server error' });
         }
 };
+
+
+
 exports.getHourlyPricingByDistance = async (req, res) => {
         try {
                 const { distanceInKm, city } = req.body;
