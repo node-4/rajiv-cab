@@ -1554,62 +1554,54 @@ exports.removeHourlyPricing = async (req, res) => {
 };
 exports.getPricingByDistance = async (req, res) => {
         try {
-                const { distanceInKm, city } = req.body;
-                const userId = req.user;
-                const user = await User.findById(userId);
-
-                if (!user) {
-                        return res.status(404).json({ success: false, message: 'User not found' });
+                const { city, distanceInKm } = req.body;
+                const cityDetails = await cityModel.findOne({ city });
+                if (!cityDetails) {
+                        return res.status(404).json({ status: 404, message: 'City not found', data: {} });
                 }
-
-                const findPrivacy = await cityModel.findOne({ city });
-
-                if (!findPrivacy) {
-                        return res.status(404).json({ success: false, message: 'City not found' });
-                }
-
-                const pricingDetails = await basePricing.find({ city: findPrivacy._id }).populate('vehicle');
-
-                if (pricingDetails.length === 0) {
+                const vehicles = await vehicle.find();
+                const pricingDetails = await basePricing.find({ city: cityDetails._id });
+                if (!pricingDetails || pricingDetails.length === 0) {
                         return res.status(404).json({ success: false, message: 'No pricing details found for the selected city' });
                 }
+                const calculatedPrices = [];
+                for (const vehicle of vehicles) {
+                        const vehiclePricingBase = pricingDetails.find(detail => detail.vehicle.toString() === vehicle._id.toString());
+                        if (vehiclePricingBase) {
+                                const pricingDetails1 = await dailyPricing.find({ vehicle: vehicle._id, city: cityDetails._id });
+                                const totalCharges = calculatePricing(distanceInKm, pricingDetails1);
+                                const additionalCharges = vehiclePricingBase.basePrice + vehiclePricingBase.taxRate + vehiclePricingBase.gstRate + vehiclePricingBase.serviceCharge + vehiclePricingBase.nightCharges + vehiclePricingBase.waitingCharge + vehiclePricingBase.trafficCharge;
+                                const totalPrice = totalCharges + additionalCharges;
 
-                // Function to calculate pricing based on distance
-                function calculatePricing(distance, slabs, pricingDetail) {
-                        let totalPricing = 0;
-                        let lastToKm = 0;
-                        for (let i = 0; i < slabs.length; i++) {
-                                if (distance > slabs[i].toKm) {
-                                        totalPricing += (slabs[i].toKm - lastToKm) * slabs[i].price;
-                                        lastToKm = slabs[i].toKm;
-                                } else if (distance >= slabs[i].fromKm) {
-                                        totalPricing += (distance - lastToKm) * slabs[i].price;
-                                        break;
-                                }
+                                calculatedPrices.push({
+                                        additionalCharges,
+                                        totalCharges,
+                                        totalPrice,
+                                        distanceInKm,
+                                        vehicle: vehicle,
+                                });
                         }
-                        return totalPricing + (pricingDetail.basePrice + pricingDetail.kmRate * distance + pricingDetail.taxRate + pricingDetail.gstRate + pricingDetail.serviceCharge + pricingDetail.nightCharges + pricingDetail.waitingCharge + pricingDetail.trafficCharge);
                 }
-
-                // Calculate prices for each vehicle
-                const prices = await Promise.all(pricingDetails.map(async (pricingDetail) => {
-                        const slabs = await dailyPricing.find({ city: findPrivacy._id, vehicle: pricingDetail.vehicle });
-                        const totalPrice = calculatePricing(distanceInKm, slabs, pricingDetail);
-                        return {
-                                vehicle: pricingDetail.vehicle,
-                                distanceInKm,
-                                totalPrice
-                        };
-                }));
-
-                return res.status(200).json({ success: true, message: 'Prices calculated successfully', data: prices });
+                return res.status(200).json({ success: true, message: 'Prices calculated successfully', data: calculatedPrices });
         } catch (error) {
                 console.error(error);
                 return res.status(500).json({ success: false, message: 'Internal server error' });
         }
 };
-
-
-
+function calculatePricing(distance, slabs) {
+        let totalPricing = 0;
+        let lastToKm = 0;
+        for (let i = 0; i < slabs.length; i++) {
+                if (distance > slabs[i].toKm) {
+                        totalPricing += (slabs[i].toKm - lastToKm) * slabs[i].price;
+                        lastToKm = slabs[i].toKm;
+                } else if (distance >= slabs[i].fromKm) {
+                        totalPricing += (distance - lastToKm) * slabs[i].price;
+                        break;
+                }
+        }
+        return totalPricing;
+}
 exports.getHourlyPricingByDistance = async (req, res) => {
         try {
                 const { distanceInKm, city } = req.body;
@@ -1816,31 +1808,112 @@ exports.deleteOutStationPricing = async (req, res) => {
 };
 exports.getOutStationPricingByDistance = async (req, res) => {
         try {
-                const { distanceInKm } = req.body;
+                const { hr, type, distanceInKm, city, vehicle } = req.body;
+                console.log(req.body)
                 const userId = req.user;
                 const user = await User.findById(userId);
                 if (!user) {
                         return res.status(404).json({ success: false, message: 'User not found' });
                 }
-                const findPrivacy = await cityModel.findOne({ city: req.body.city });
+                const findPrivacy = await cityModel.findOne({ city });
                 if (!findPrivacy) {
                         return res.status(404).json({ success: false, message: 'City not found' });
                 }
-                const allPricingDetails = await outStationPricing.find({ city: findPrivacy._id }).populate('vehicle');
+                const allPricingDetails = await outStationPricing.findOne({ city: findPrivacy._id, vehicle, type: type }).populate('vehicle');
                 if (!allPricingDetails || allPricingDetails.length === 0) {
                         return res.status(404).json({ success: false, message: 'No pricing details found' });
+                } else {
+                        let totalPrice = allPricingDetails.price, onBaseOff;
+                        if (distanceInKm > allPricingDetails.kmLimit) {
+                                let kmAmount = allPricingDetails.kmPrice * (distanceInKm - allPricingDetails.kmLimit);
+                                totalPrice += kmAmount;
+                                onBaseOff = "km";
+                        } else if (hr > allPricingDetails.hrLimit) {
+                                totalPrice += allPricingDetails.hrPrice * (hr - allPricingDetails.hrLimit);
+                                onBaseOff = "hr";
+                        } else {
+                                totalPrice = totalPrice;
+                                onBaseOff = "noOne";
+                        }
+                        return res.status(200).json({
+                                success: true, message: 'Prices calculated successfully', vehicle: allPricingDetails.vehicle, distanceInKm,
+                                totalPrice,
+                                onBaseOff
+                        });
                 }
-                const prices = allPricingDetails.map((pricingDetails) => ({
-                        vehicle: pricingDetails.vehicle,
-                        distanceInKm: distanceInKm,
-                        totalPrice: pricingDetails.price * distanceInKm
-                }));
-                return res.status(200).json({ success: true, message: 'Prices calculated successfully', data: prices });
         } catch (error) {
                 console.error(error);
                 return res.status(500).json({ success: false, message: 'Internal server error' });
         }
 };
+exports.getSuperCarPricingByDistance = async (req, res) => {
+        try {
+                const { hr, distanceInKm, superCarId } = req.body;
+                console.log(req.body)
+                const userId = req.user;
+                const user = await User.findById(userId);
+                if (!user) {
+                        return res.status(404).json({ success: false, message: 'User not found' });
+                }
+                const findPrivacy = await superCar.findOne({ _id: superCarId });
+                if (!findPrivacy) {
+                        return res.status(404).json({ success: false, message: 'City not found' });
+                }
+                const allPricingDetails = await superCarPricing.findOne({ superCar: findPrivacy._id }).populate('superCar');
+                if (!allPricingDetails || allPricingDetails.length === 0) {
+                        return res.status(404).json({ success: false, message: 'No pricing details found' });
+                } else {
+                        let totalPrice = allPricingDetails.price, onBaseOff;
+                        if (distanceInKm > allPricingDetails.kmLimit) {
+                                let kmAmount = allPricingDetails.kmPrice * (distanceInKm - allPricingDetails.kmLimit);
+                                totalPrice += kmAmount;
+                                onBaseOff = "km";
+                        } else if (hr > allPricingDetails.hrLimit) {
+                                totalPrice += allPricingDetails.hrPrice * (hr - allPricingDetails.hrLimit);
+                                onBaseOff = "hr";
+                        } else {
+                                totalPrice = totalPrice;
+                                onBaseOff = "noOne";
+                        }
+                        return res.status(200).json({
+                                success: true, message: 'Prices calculated successfully', superCar: allPricingDetails.superCar, distanceInKm,
+                                totalPrice,
+                                onBaseOff
+                        });
+                }
+        } catch (error) {
+                console.error(error);
+                return res.status(500).json({ success: false, message: 'Internal server error' });
+        }
+};
+
+// exports.getOutStationPricingByDistance = async (req, res) => {
+//         try {
+//                 const { distanceInKm } = req.body;
+//                 const userId = req.user;
+//                 const user = await User.findById(userId);
+//                 if (!user) {
+//                         return res.status(404).json({ success: false, message: 'User not found' });
+//                 }
+//                 const findPrivacy = await cityModel.findOne({ city: req.body.city });
+//                 if (!findPrivacy) {
+//                         return res.status(404).json({ success: false, message: 'City not found' });
+//                 }
+//                 const allPricingDetails = await outStationPricing.find({ city: findPrivacy._id }).populate('vehicle');
+//                 if (!allPricingDetails || allPricingDetails.length === 0) {
+//                         return res.status(404).json({ success: false, message: 'No pricing details found' });
+//                 }
+//                 const prices = allPricingDetails.map((pricingDetails) => ({
+//                         vehicle: pricingDetails.vehicle,
+//                         distanceInKm: distanceInKm,
+//                         totalPrice: pricingDetails.price * distanceInKm
+//                 }));
+//                 return res.status(200).json({ success: true, message: 'Prices calculated successfully', data: prices });
+//         } catch (error) {
+//                 console.error(error);
+//                 return res.status(500).json({ success: false, message: 'Internal server error' });
+//         }
+// };
 exports.addBasePricing = async (req, res) => {
         try {
                 const findPrivacy = await vehicle.findById({ _id: req.body.vehicle });

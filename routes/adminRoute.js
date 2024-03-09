@@ -84,6 +84,7 @@ module.exports = (app) => {
   app.put("/api/v1/SuperCarPricing/:id", upload.array('image'), adminController.updateSuperCarPricing);
   app.delete("/api/v1/SuperCarPricing/:id", adminController.deleteSuperCarPricing);
   app.get("/api/v1/SuperCarPricing", adminController.getSuperCarPricing);
+  app.post("/api/v1/SuperCarPricing/by/distance", authJwt.verifyToken, adminController.getSuperCarPricingByDistance);
   app.post('/api/v1/State', adminController.addState);
   app.get('/api/v1/State/:id', adminController.getStateById);
   app.delete('/api/v1/State/:id', adminController.DeleteState);
