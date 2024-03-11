@@ -3,6 +3,8 @@ const DriverDetail = require("../model/Auth/driverDetail");
 const Booking = require("../model/booking/booking");
 const settleBooking = require("../model/booking/settleBooking");
 const driverVehicleCategory = require("../model/Vehical/driverVehicalCategory");
+const bookingPayment = require("../model/Auth/bookingPayment");
+const commission = require("../model/Auth/commission");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const randomatic = require("randomatic");
@@ -319,6 +321,128 @@ exports.stopBooking = async (req, res) => {
                 }
                 const updatedbooking = await Booking.findByIdAndUpdate({ _id: booking._id }, { $set: { status: "complete" } }, { new: true });
                 return res.status(200).json({ status: 200, message: "User booking complete successfully", data: updatedbooking, });
+        } catch (error) {
+                console.error("Error:", error);
+                return res.status(500).json({ status: 500, message: "Internal server error", data: error.message, });
+        }
+};
+exports.bookingPayment = async (req, res) => {
+        try {
+                const booking = await Booking.findOne({ _id: req.params.bookingId, }).populate({ path: 'userId', select: 'mobileNumber' });
+                if (!booking) {
+                        return res.status(404).json({ status: 404, message: "Data not found", data: {} });
+                }
+                const findCommission = await commission.findOne({ isActive: true })
+                if (findCommission) {
+                        if (req.body.paymentMode == "CASH") {
+                                let adminCommission, driverCommission;
+                                if (findCommission.disCountType == "FLAT") {
+                                        adminCommission = findCommission.adminCommission;
+                                        driverCommission = booking.totalPrice - adminCommission;
+                                } else if (findCommission.disCountType == "PERCENTAGE") {
+                                        adminCommission = (findCommission.adminCommission * booking.totalPrice) / 100;
+                                        driverCommission = (findCommission.driverCommission * booking.totalPrice) / 100;
+                                }
+                                const updatedbooking = await Booking.findByIdAndUpdate({ _id: booking._id }, { $set: { isCommission: true } }, { new: true });
+                                if (updatedbooking) {
+                                        const user = await User.findById({ _id: booking.driver });
+                                        if (user) {
+                                                let updateCash = await User.findByIdAndUpdate({ _id: user._id }, { $set: { adminCash: user.adminCash + adminCommission } }, { new: true })
+                                        }
+                                        let obj = {
+                                                user: booking.userId,
+                                                driverId: booking.driver,
+                                                bookingId: booking._id,
+                                                id: booking.bookingId,
+                                                amount: booking.totalPrice,
+                                                paymentMode: req.body.paymentMode,
+                                                transactionStatus: "SUCCESS",
+                                        }
+                                        const newUser = await bookingPayment.create(obj);
+                                        return res.status(200).json({ status: 200, message: "User booking complete successfully", data: updatedbooking, });
+                                }
+                        } else {
+                                let adminCommission, driverCommission;
+                                if (findCommission.disCountType == "FLAT") {
+                                        adminCommission = findCommission.adminCommission;
+                                        driverCommission = booking.totalPrice - adminCommission;
+                                } else if (findCommission.disCountType == "PERCENTAGE") {
+                                        adminCommission = (findCommission.adminCommission * booking.totalPrice) / 100;
+                                        driverCommission = (findCommission.driverCommission * booking.totalPrice) / 100;
+                                }
+                                const updatedbooking = await Booking.findByIdAndUpdate({ _id: booking._id }, { $set: { isCommission: true } }, { new: true });
+                                if (updatedbooking) {
+                                        const user = await User.findById({ _id: booking.driver });
+                                        if (user) {
+                                                let updateCash = await User.findByIdAndUpdate({ _id: user._id }, { $set: { wallet: user.wallet + driverCommission } }, { new: true })
+                                        }
+                                        let obj = {
+                                                user: booking.userId,
+                                                driverId: booking.driver,
+                                                bookingId: booking._id,
+                                                id: booking.bookingId,
+                                                amount: booking.totalPrice,
+                                                paymentMode: req.body.paymentMode,
+                                                transactionStatus: "SUCCESS",
+                                        }
+                                        const newUser = await bookingPayment.create(obj);
+                                        return res.status(200).json({ status: 200, message: "User booking complete successfully", data: updatedbooking, });
+                                }
+                        }
+                } else {
+                        if (req.body.paymentMode == "CASH") {
+                                const updatedbooking = await Booking.findByIdAndUpdate({ _id: booking._id }, { $set: { isCommission: false } }, { new: true });
+                                if (updatedbooking) {
+                                        let obj = {
+                                                user: booking.userId,
+                                                driverId: booking.driver,
+                                                bookingId: booking._id,
+                                                id: booking.bookingId,
+                                                amount: booking.totalPrice,
+                                                paymentMode: req.body.paymentMode,
+                                                transactionStatus: "SUCCESS",
+                                        }
+                                        const newUser = await bookingPayment.create(obj);
+                                        return res.status(200).json({ status: 200, message: "User booking complete successfully", data: updatedbooking, });
+                                }
+                        } else {
+                                const updatedbooking = await Booking.findByIdAndUpdate({ _id: booking._id }, { $set: { isCommission: false } }, { new: true });
+                                if (updatedbooking) {
+                                        let obj = {
+                                                user: booking.userId,
+                                                driverId: booking.driver,
+                                                bookingId: booking._id,
+                                                id: booking.bookingId,
+                                                amount: booking.totalPrice,
+                                                paymentMode: req.body.paymentMode,
+                                                transactionStatus: "SUCCESS",
+                                        }
+                                        const newUser = await bookingPayment.create(obj);
+                                        return res.status(200).json({ status: 200, message: "User booking complete successfully", data: updatedbooking, });
+                                }
+                        }
+                }
+        } catch (error) {
+                console.error("Error:", error);
+                return res.status(500).json({ status: 500, message: "Internal server error", data: error.message, });
+        }
+};
+exports.getMyEarning = async (req, res) => {
+        try {
+                if (req.query.type == "UPI") {
+                        const acceptedOrders = await bookingPayment.find({ driverId: req.user.id, paymentMode: "WALLET" }).populate("user");
+                        if (acceptedOrders.length == 0) {
+                                return res.status(404).json({ status: 404, message: "Data not found", data: {} });
+                        }
+                        return res.status(200).json({ status: 200, message: "Data found", data: acceptedOrders });
+                }
+                if (req.query.type == "CASH") {
+                        const acceptedOrders = await bookingPayment.find({ driverId: req.user.id, paymentMode: "CASH" }).populate("user");
+                        if (acceptedOrders.length == 0) {
+                                return res.status(404).json({ status: 404, message: "Data not found", data: {} });
+                        }
+                        return res.status(200).json({ status: 200, message: "Data found", data: acceptedOrders });
+                }
         } catch (error) {
                 console.error("Error:", error);
                 return res.status(500).json({ status: 500, message: "Internal server error", data: error.message, });

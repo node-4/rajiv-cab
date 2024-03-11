@@ -72,7 +72,7 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
-  cashInHand: {
+  adminCash: {
     type: Number,
     default: 0,
   },

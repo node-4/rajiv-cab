@@ -21,6 +21,7 @@ const vehicleAmbulance = require('../model/Vehical/vehicleAmbulance');
 const driverVehicalCategory = require('../model/Vehical/driverVehicalCategory');
 const cityModel = require('../model/cityState/cityModel')
 const stateModel = require('../model/cityState/state')
+const commission = require('../model/Auth/commission')
 const settleBooking = require("../model/booking/settleBooking");
 const Booking = require("../model/booking/booking");
 let Country = require('country-state-city').Country;
@@ -2163,6 +2164,88 @@ exports.getSettleBookingById = async (req, res) => {
                         return res.status(200).json({ status: 200, message: 'Data found for the specified type', data: findPrivacy });
                 } else {
                         return res.status(404).json({ status: 404, message: 'Data not found for the specified type', data: {} });
+                }
+        } catch (error) {
+                console.error(error);
+                return res.status(500).json({ status: 500, message: 'Server error', data: error });
+        }
+};
+exports.addCommission = async (req, res, next) => {
+        try {
+
+                let findVehicalType = await commission.findOne({ disCountType: req.body.disCountType });
+                if (findVehicalType) {
+                        let adminCommission, driverCommission, disCountType;
+                        disCountType = req.body.disCountType;
+                        if (disCountType == "FLAT") {
+                                adminCommission = Number(req.body.adminCommission);
+                                driverCommission = 0;
+                        } else if (disCountType == "PERCENTAGE") {
+                                adminCommission = Number(req.body.adminCommission);
+                                driverCommission = 100 - adminCommission;
+                        } else {
+                                disCountType = findVehicalType.disCountType;
+                                adminCommission = findVehicalType.adminCommission;
+                                driverCommission = findVehicalType.driverCommission;
+
+                        }
+                        var obj = {
+                                adminCommission: adminCommission,
+                                driverCommission: driverCommission,
+                                disCountType: req.body.disCountType
+                        };
+                        const result = await commission.findByIdAndUpdate({ _id: findVehicalType._id }, { $set: obj }, { new: true });
+                        if (result) {
+                                return res.status(200).json({ status: 200, message: 'add Commision successfully.', data: result });
+                        }
+                } else {
+                        let adminCommission, driverCommission;
+                        if (req.body.disCountType == "FLAT") {
+                                adminCommission = Number(req.body.adminCommission);
+                                driverCommission = 0;
+                        } else if (req.body.disCountType == "PERCENTAGE") {
+                                adminCommission = Number(req.body.adminCommission);
+                                driverCommission = 100 - adminCommission;
+                        }
+                        var obj = {
+                                adminCommission: adminCommission,
+                                driverCommission: driverCommission,
+                                disCountType: req.body.disCountType
+                        };
+                        let result = await commission(obj).save();
+                        if (result) {
+                                return res.status(200).json({ status: 200, message: 'add Commision successfully.', data: result });
+                        }
+                }
+        } catch (error) {
+                console.error(error);
+                return res.status(500).json({ status: 500, message: 'Server error', data: error });
+        }
+};
+exports.deleteCommission = async (req, res, next) => {
+        try {
+                let findVehicalType = await commission.findOne({ _id: req.params.id });
+                if (!findVehicalType) {
+                        return res.status(404).send({ status: 404, message: "commission not found", data: {}, });
+                } else {
+                        let updates = await commission.findByIdAndDelete({ _id: findVehicalType._id });
+                        if (updates) {
+                                return res.status(200).json({ status: 200, message: 'Delete successully', data: updates });
+                        }
+                }
+
+        } catch (error) {
+                console.log(error)
+                return res.status(500).json({ status: 500, message: 'Server error', data: error });
+        }
+};
+exports.getCommission = async (req, res) => {
+        try {
+                const booking = await commission.find();
+                if (booking.length > 0) {
+                        return res.status(200).json({ status: 200, message: 'Commission found successfully', data: booking });
+                } else {
+                        return res.status(404).json({ status: 404, message: 'Commission not found.', data: booking });
                 }
         } catch (error) {
                 console.error(error);

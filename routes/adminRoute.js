@@ -112,4 +112,8 @@ module.exports = (app) => {
   app.put('/api/v1/assignDriverOnSettleBooking/:bookingId', adminController.assignDriverOnSettleBooking);
   app.get('/api/v1/getBooking', adminController.getBooking);
   app.get('/api/v1/getBookingById/:bookingId', adminController.getBookingById);
+  app.post("/api/v1/commission/add", adminController.addCommission);
+  app.get("/api/v1/commission", adminController.getCommission);
+  app.delete("/api/v1/commission", adminController.deleteCommission);
+
 }

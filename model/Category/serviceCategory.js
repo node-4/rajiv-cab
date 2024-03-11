@@ -15,7 +15,7 @@ const categorySchema = mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['Basic', 'Hourly', "Monthly", "superCar", "other"]
+        enum: ['Basic', 'Hourly', "Monthly", "superCar", "other","Insurance"]
     },
     isActive: {
         type: Boolean,

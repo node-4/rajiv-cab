@@ -1,5 +1,8 @@
 const mongoose = require('mongoose');
 const userLocationSchema = new mongoose.Schema({
+  bookingId: {
+    type: String,
+  },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -111,6 +114,10 @@ const userLocationSchema = new mongoose.Schema({
   totalPrice: {
     type: String,
   },
+  isCommission:{
+    type:Boolean,
+    default: false
+}
 }, { timestamps: true });
 userLocationSchema.index({ location: '2dsphere' });
 module.exports = mongoose.model('booking', userLocationSchema);
