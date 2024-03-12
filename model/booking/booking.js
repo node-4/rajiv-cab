@@ -35,6 +35,11 @@ const userLocationSchema = new mongoose.Schema({
     type: String,
     default: 'pending',
   },
+  paymentMode: {
+    type: String,
+    enum: ['cash', 'upi', "pending"],
+    default: 'pending',
+  },
   date: {
     type: String,
   },
@@ -114,10 +119,10 @@ const userLocationSchema = new mongoose.Schema({
   totalPrice: {
     type: String,
   },
-  isCommission:{
-    type:Boolean,
+  isCommission: {
+    type: Boolean,
     default: false
-}
+  }
 }, { timestamps: true });
 userLocationSchema.index({ location: '2dsphere' });
 module.exports = mongoose.model('booking', userLocationSchema);

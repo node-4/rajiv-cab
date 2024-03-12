@@ -343,7 +343,7 @@ exports.bookingPayment = async (req, res) => {
                                         adminCommission = (findCommission.adminCommission * booking.totalPrice) / 100;
                                         driverCommission = (findCommission.driverCommission * booking.totalPrice) / 100;
                                 }
-                                const updatedbooking = await Booking.findByIdAndUpdate({ _id: booking._id }, { $set: { isCommission: true } }, { new: true });
+                                const updatedbooking = await Booking.findByIdAndUpdate({ _id: booking._id }, { $set: { isCommission: true, paymentMode: "cash" } }, { new: true });
                                 if (updatedbooking) {
                                         const user = await User.findById({ _id: booking.driver });
                                         if (user) {
@@ -370,7 +370,7 @@ exports.bookingPayment = async (req, res) => {
                                         adminCommission = (findCommission.adminCommission * booking.totalPrice) / 100;
                                         driverCommission = (findCommission.driverCommission * booking.totalPrice) / 100;
                                 }
-                                const updatedbooking = await Booking.findByIdAndUpdate({ _id: booking._id }, { $set: { isCommission: true } }, { new: true });
+                                const updatedbooking = await Booking.findByIdAndUpdate({ _id: booking._id }, { $set: { isCommission: true, paymentMode: "upi" } }, { new: true });
                                 if (updatedbooking) {
                                         const user = await User.findById({ _id: booking.driver });
                                         if (user) {
@@ -391,7 +391,7 @@ exports.bookingPayment = async (req, res) => {
                         }
                 } else {
                         if (req.body.paymentMode == "CASH") {
-                                const updatedbooking = await Booking.findByIdAndUpdate({ _id: booking._id }, { $set: { isCommission: false } }, { new: true });
+                                const updatedbooking = await Booking.findByIdAndUpdate({ _id: booking._id }, { $set: { isCommission: false, paymentMode: "cash" } }, { new: true });
                                 if (updatedbooking) {
                                         let obj = {
                                                 user: booking.userId,
@@ -406,7 +406,7 @@ exports.bookingPayment = async (req, res) => {
                                         return res.status(200).json({ status: 200, message: "User booking complete successfully", data: updatedbooking, });
                                 }
                         } else {
-                                const updatedbooking = await Booking.findByIdAndUpdate({ _id: booking._id }, { $set: { isCommission: false } }, { new: true });
+                                const updatedbooking = await Booking.findByIdAndUpdate({ _id: booking._id }, { $set: { isCommission: false, paymentMode: "upi" } }, { new: true });
                                 if (updatedbooking) {
                                         let obj = {
                                                 user: booking.userId,
