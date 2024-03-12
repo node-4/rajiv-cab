@@ -23,6 +23,7 @@ const cityModel = require('../model/cityState/cityModel')
 const stateModel = require('../model/cityState/state')
 const commission = require('../model/Auth/commission')
 const settleBooking = require("../model/booking/settleBooking");
+const driverSettleBooking = require("../model/booking/driverSettleBooking");
 const Booking = require("../model/booking/booking");
 let Country = require('country-state-city').Country;
 let State = require('country-state-city').State;
@@ -2157,8 +2158,20 @@ exports.assignDriverOnSettleBooking = async (req, res) => {
                 if (booking) {
                         const user = await User.findOne({ _id: req.body.driverId, role: "driver" });
                         if (user) {
-                                const booking1 = await settleBooking.findByIdAndUpdate({ _id: booking._id }, { $set: { driver: user._id, status: "Accept" } }, { new: true });
-                                return res.status(200).json({ status: 200, message: 'Booking assign to driver successfully', data: booking1 });
+                                const findBooking = await driverSettleBooking.findById({ driver: req.body.driverId });
+                                if (findBooking) {
+                                        let bookingId = await reffralCode();
+                                        await driverSettleBooking.findByIdAndUpdate({ _id: findBooking._id }, { $set: { settleBookingId: bookingId }, $push: { booking: req.params.bookingId } }, { new: true });
+                                        const booking1 = await settleBooking.findByIdAndUpdate({ _id: booking._id }, { $set: { driver: user._id, status: "Accept", settleBookingId: bookingId } }, { new: true });
+                                        return res.status(200).json({ status: 200, message: 'Booking assign to driver successfully', data: booking1 });
+                                } else {
+                                        let bookingId = await reffralCode();
+                                        let bookingArr = [];
+                                        bookingArr.push(req.params.bookingId);
+                                        await driverSettleBooking.create({ driver: req.body.driverId, settleBookingId: bookingId, booking: bookingArr, });
+                                        const booking1 = await settleBooking.findByIdAndUpdate({ _id: booking._id }, { $set: { driver: user._id, status: "Accept", settleBookingId: bookingId } }, { new: true });
+                                        return res.status(200).json({ status: 200, message: 'Booking assign to driver successfully', data: booking1 });
+                                }
                         } else {
                                 return res.status(404).json({ status: 404, message: 'user not found.', data: {} });
                         }
@@ -2291,3 +2304,11 @@ exports.getCommission = async (req, res) => {
                 return res.status(500).json({ status: 500, message: 'Server error', data: error });
         }
 };
+const reffralCode = async () => {
+        var digits = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        let OTP = '';
+        for (let i = 0; i < 9; i++) {
+                OTP += digits[Math.floor(Math.random() * 36)];
+        }
+        return OTP;
+}

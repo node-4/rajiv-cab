@@ -2,6 +2,7 @@ const User = require("../model/Auth/userModel");
 const DriverDetail = require("../model/Auth/driverDetail");
 const Booking = require("../model/booking/booking");
 const settleBooking = require("../model/booking/settleBooking");
+const driverSettleBooking = require("../model/booking/driverSettleBooking");
 const driverVehicleCategory = require("../model/Vehical/driverVehicalCategory");
 const bookingPayment = require("../model/Auth/bookingPayment");
 const commission = require("../model/Auth/commission");
@@ -511,7 +512,7 @@ exports.myBooking = async (req, res) => {
 };
 exports.getSettleBooking = async (req, res) => {
         try {
-                const booking = await settleBooking.find({ driver: req.user.id }).populate('user driver');
+                const booking = await driverSettleBooking.find({ driver: req.user.id }).populate({ path: 'booking', populate: { path: 'user driver' } });
                 if (booking.length > 0) {
                         return res.status(200).json({ status: 200, message: 'Booking request found successfully', data: booking });
                 } else {
@@ -545,5 +546,44 @@ exports.getDriverVehicleCategory = async (req, res) => {
                 }
         } catch (err) {
                 return res.status(400).json({ status: 400, message: err.message });
+        }
+};
+exports.sendOtpToUserSettleBooking = async (req, res) => {
+        try {
+                const booking = await settleBooking.findOne({ _id: req.params.bookingId, });
+                if (!booking) {
+                        return res.status(404).json({ status: 404, message: "Data not found", data: {} });
+                }
+                const newOTP = randomatic("0", 4);
+                booking.otp = newOTP;
+                await booking.save();
+                return res.status(200).json({ status: 200, message: "Otp send to user successfully", data: booking });
+        } catch (error) {
+                console.log(error);
+                return res.status(500).json({ status: 500, message: "Internal server error", data: error.message, });
+        }
+};
+exports.startBooking = async (req, res) => {
+        try {
+                const { otp } = req.body;
+                const booking = await settleBooking.findOne({ _id: req.params.bookingId, driver: req.user.id, });
+                if (!booking) {
+                        return res.status(404).json({ status: 404, message: "Data not found", data: {} });
+                }
+                if (booking.otp === otp) {
+                        let dailyStatus = {
+                                date: new Date(Date.now()),
+                                morningStatus: "pick",
+                        };
+                        const booking = await settleBooking.findByIdAndUpdate({ _id: req.params.bookingId }, { $push: { dailyStatus: dailyStatus } }, { new: true });
+                        booking.otpVerifiedAt = new Date();
+                        await booking.save();
+                        return res.status(200).json({ status: 200, message: "Booking started successfully", data: booking });
+                } else {
+                        return res.status(400).json({ status: 400, message: "Invalid OTP", data: {} });
+                }
+        } catch (error) {
+                console.error("Error:", error);
+                return res.status(500).json({ status: 500, message: "Internal server error", data: error.message, });
         }
 };

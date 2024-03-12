@@ -121,8 +121,11 @@ exports.createSettleBooking = async (req, res) => {
         let pricingDetails = await basePricing.findOne({ vehicle: vehicle, city: findPrivacy2._id, });
         let pricingDetails1 = await dailyPricing.findOne({ vehicle: vehicle, city: findPrivacy2._id, toKm: { $gte: km }, fromKm: { $lte: km } });
         let pricing = ((pricingDetails1.price * km) + pricingDetails.basePrice + pricingDetails.taxRate + pricingDetails.gstRate + pricingDetails.serviceCharge + pricingDetails.nightCharges + pricingDetails.waitingCharge + pricingDetails.trafficCharge) * day;
+        let bookingId = await reffralCode();
         let obj = {
             user: user._id,
+            bookingId,
+            car: vehicle,
             pickUpTime: pickUpTime,
             current: current,
             drop: drop,
@@ -134,6 +137,22 @@ exports.createSettleBooking = async (req, res) => {
         if (booking) {
             return res.status(200).json({ status: 200, message: 'Bokking request send successfully', data: booking });
         }
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ status: 500, message: 'Server error', data: error });
+    }
+};
+exports.getSettleBooking = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).send({ status: 404, message: "user not found ", data: {} });
+        }
+        const bookingData = await settleBooking.find({ user: user._id }).populate("driver car");
+        if (bookingData.length == 0) {
+            return res.status(404).json({ status: 404, message: 'Bokking data not found', data: {} });
+        }
+        return res.status(200).json({ status: 200, message: 'Bokking data found', data: bookingData });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ status: 500, message: 'Server error', data: error });
@@ -151,7 +170,8 @@ exports.createSuperCarBooking = async (req, res) => {
             return res.status(404).json({ success: false, message: 'No pricing details found for the selected car type' });
         }
         totalCharges = pricingDetails.price;
-        const booking = await Booking.create({ userId: user._id, current, superCar: pricingDetails.superCar, type: "superCar", serviceType: "superCar", time: time, drop, date, totalPrice: totalCharges });
+        let bookingId = await reffralCode();
+        const booking = await Booking.create({ userId: user._id, bookingId, current, superCar: pricingDetails.superCar, type: "superCar", serviceType: "superCar", time: time, drop, date, totalPrice: totalCharges });
         return res.status(201).json(booking);
     } catch (error) {
         console.error(error);
@@ -178,7 +198,8 @@ exports.createHourlyBooking = async (req, res) => {
             return res.status(404).json({ success: false, message: 'No pricing details found for the selected car type' });
         }
         totalCharges = pricingDetails.price;
-        const booking = await Booking.create({ userId: user._id, current, type: "Hourly", serviceType: "Hourly", car: carId._id, drop, distance, hour, date, time, totalPrice: totalCharges });
+        let bookingId = await reffralCode();
+        const booking = await Booking.create({ userId: user._id, bookingId, current, type: "Hourly", serviceType: "Hourly", car: carId._id, drop, distance, hour, date, time, totalPrice: totalCharges });
         return res.status(201).json(booking);
     } catch (error) {
         console.error(error);
@@ -269,10 +290,12 @@ exports.createBooking = async (req, res) => {
         totalCharges = calculatePricing(distance, pricingDetails1)
         let additionalCharges = pricingDetails.basePrice + pricingDetails.taxRate + pricingDetails.gstRate + pricingDetails.serviceCharge + pricingDetails.nightCharges + pricingDetails.waitingCharge + pricingDetails.trafficCharge;
         let totalPrice = totalCharges + additionalCharges;
+        let bookingId = await reffralCode();
         const booking = await Booking.create({
             userId: user._id,
             current,
             drop,
+            bookingId,
             distance,
             hour,
             car: carId._id,
@@ -303,11 +326,13 @@ exports.createAmbulanceBooking = async (req, res) => {
         let totalCharges = pricingDetails.perKm * distance;
         let additionalCharges = pricingDetails.basePrice + pricingDetails.taxRate + pricingDetails.gstRate + pricingDetails.serviceCharge + pricingDetails.nightCharges + pricingDetails.waitingCharge + pricingDetails.trafficCharge;
         let totalPrice = totalCharges + additionalCharges;
+        let bookingId = await reffralCode();
         const booking = await Booking.create({
             userId: user._id,
             current,
             drop,
             distance,
+            bookingId,
             hour,
             vehicleAmbulance: pricingDetails._id,
             date,
@@ -442,6 +467,14 @@ exports.getOrder = async (req, res) => {
         return res.status(500).json({ error: 'Internal server error' });
     }
 };
+const reffralCode = async () => {
+    var digits = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let OTP = '';
+    for (let i = 0; i < 9; i++) {
+        OTP += digits[Math.floor(Math.random() * 36)];
+    }
+    return OTP;
+}
 // exports.getProductsByBooking = async (req, res) => {
 //   const userLatitude = parseFloat(req.params.latitude);
 //   const userLongitude = parseFloat(req.params.longitude);

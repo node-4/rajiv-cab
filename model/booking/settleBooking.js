@@ -1,5 +1,11 @@
 const mongoose = require('mongoose');
 const userLocationSchema = new mongoose.Schema({
+  bookingId: {
+    type: String,
+  },
+  settleBookingId: {
+    type: String,
+  },
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -7,6 +13,10 @@ const userLocationSchema = new mongoose.Schema({
   driver: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
+  },
+  car: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "vehicle",
   },
   pickUpTime: {
     type: String,
@@ -48,9 +58,37 @@ const userLocationSchema = new mongoose.Schema({
   subscriptionExpiration: {
     type: Date,
   },
+  otp: {
+    type: String,
+  },
+  dailyStatus: [{
+    date: {
+      type: Date,
+    },
+    morningStatus: {
+      type: String,
+      enum: ["pending", "pick", "drop"],
+      default: 'pending',
+    },
+    eveningStatus: {
+      type: String,
+      enum: ["pending", "pick", "drop"],
+      default: 'pending',
+    },
+  }],
   isSubscription: {
     type: Boolean,
     default: false,
+  },
+  morningStatus: {
+    type: String,
+    enum: ["pending", "pick", "drop"],
+    default: 'pending',
+  },
+  eveningStatus: {
+    type: String,
+    enum: ["pending", "pick", "drop"],
+    default: 'pending',
   },
   status: {
     type: String,
