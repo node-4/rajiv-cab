@@ -109,7 +109,7 @@ exports.updateProfile = async (req, res) => {
 };
 exports.createSettleBooking = async (req, res) => {
     try {
-        const { current, drop, pickUpTime, dropTime, km, city, vehicle } = req.body;
+        const { current, drop, pickUpTime, dropTime, km, city, vehicle, day } = req.body;
         const user = await User.findById(req.user.id);
         if (!user) {
             return res.status(404).send({ status: 404, message: "user not found ", data: {} });
@@ -120,7 +120,7 @@ exports.createSettleBooking = async (req, res) => {
         }
         let pricingDetails = await basePricing.findOne({ vehicle: vehicle, city: findPrivacy2._id, });
         let pricingDetails1 = await dailyPricing.findOne({ vehicle: vehicle, city: findPrivacy2._id, toKm: { $gte: km }, fromKm: { $lte: km } });
-        let pricing = ((pricingDetails1.price * km) + pricingDetails.basePrice + pricingDetails.taxRate + pricingDetails.gstRate + pricingDetails.serviceCharge + pricingDetails.nightCharges + pricingDetails.waitingCharge + pricingDetails.trafficCharge) * 22;
+        let pricing = ((pricingDetails1.price * km) + pricingDetails.basePrice + pricingDetails.taxRate + pricingDetails.gstRate + pricingDetails.serviceCharge + pricingDetails.nightCharges + pricingDetails.waitingCharge + pricingDetails.trafficCharge) * day;
         let obj = {
             user: user._id,
             pickUpTime: pickUpTime,

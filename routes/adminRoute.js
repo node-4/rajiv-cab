@@ -57,6 +57,7 @@ module.exports = (app) => {
   app.delete("/api/v1/Pricing/:id", adminController.deletePricing);
   app.get("/api/v1/Pricing", adminController.getPricing);
   app.post("/api/v1/Pricing/by/distance", authJwt.verifyToken, adminController.getPricingByDistance);
+  app.post("/api/v1/getSettlePricingByDistance", authJwt.verifyToken, adminController.getSettlePricingByDistance);
   app.post('/api/v1/AddHourlyPricing', adminController.AddHourlyPricing);
   app.get("/api/v1/getHourlyPricingById/:id", adminController.getHourlyPricingById);
   app.get('/api/v1/getHourlyPricing', adminController.getHourlyPricing);

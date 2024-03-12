@@ -1589,6 +1589,45 @@ exports.getPricingByDistance = async (req, res) => {
                 return res.status(500).json({ success: false, message: 'Internal server error' });
         }
 };
+exports.getSettlePricingByDistance = async (req, res) => {
+        try {
+                const { city, distanceInKm, day } = req.body;
+                const cityDetails = await cityModel.findOne({ city });
+                if (!cityDetails) {
+                        return res.status(404).json({ status: 404, message: 'City not found', data: {} });
+                }
+                const vehicles = await vehicle.find();
+                const pricingDetails = await basePricing.find({ city: cityDetails._id });
+                if (!pricingDetails || pricingDetails.length === 0) {
+                        return res.status(404).json({ success: false, message: 'No pricing details found for the selected city' });
+                }
+                const calculatedPrices = [];
+                for (const vehicle of vehicles) {
+                        const vehiclePricingBase = pricingDetails.find(detail => detail.vehicle.toString() === vehicle._id.toString());
+                        if (vehiclePricingBase) {
+                                const pricingDetails1 = await dailyPricing.find({ vehicle: vehicle._id, city: cityDetails._id });
+                                const totalCharges1 = calculatePricing(distanceInKm, pricingDetails1);
+                                const additionalCharges1 = vehiclePricingBase.basePrice + vehiclePricingBase.taxRate + vehiclePricingBase.gstRate + vehiclePricingBase.serviceCharge + vehiclePricingBase.nightCharges + vehiclePricingBase.waitingCharge + vehiclePricingBase.trafficCharge;
+                                const totalPrice = (totalCharges1 + additionalCharges1) * 2;
+                                let additionalCharges = additionalCharges1 * 2;
+                                let totalCharges = totalCharges1 * 2;
+                                let total = totalPrice * day;
+                                calculatedPrices.push({
+                                        additionalCharges,
+                                        totalCharges,
+                                        totalPerDayPrice: totalPrice,
+                                        total,
+                                        distanceInKm,
+                                        vehicle: vehicle,
+                                });
+                        }
+                }
+                return res.status(200).json({ success: true, message: 'Prices calculated successfully', data: calculatedPrices });
+        } catch (error) {
+                console.error(error);
+                return res.status(500).json({ success: false, message: 'Internal server error' });
+        }
+};
 function calculatePricing(distance, slabs) {
         let totalPricing = 0;
         let lastToKm = 0;
