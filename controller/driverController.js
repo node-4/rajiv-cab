@@ -563,7 +563,7 @@ exports.sendOtpToUserSettleBooking = async (req, res) => {
                 return res.status(500).json({ status: 500, message: "Internal server error", data: error.message, });
         }
 };
-exports.startBooking = async (req, res) => {
+exports.startSettleBooking = async (req, res) => {
         try {
                 const { otp } = req.body;
                 const booking = await settleBooking.findOne({ _id: req.params.bookingId, driver: req.user.id, });
@@ -571,16 +571,51 @@ exports.startBooking = async (req, res) => {
                         return res.status(404).json({ status: 404, message: "Data not found", data: {} });
                 }
                 if (booking.otp === otp) {
-                        let dailyStatus = {
-                                date: new Date(Date.now()),
-                                morningStatus: "pick",
-                        };
-                        const booking = await settleBooking.findByIdAndUpdate({ _id: req.params.bookingId }, { $push: { dailyStatus: dailyStatus } }, { new: true });
-                        booking.otpVerifiedAt = new Date();
-                        await booking.save();
-                        return res.status(200).json({ status: 200, message: "Booking started successfully", data: booking });
+                        if (booking.morningStatus == "pending") {
+                                let dailyStatus = {
+                                        date: new Date(Date.now()),
+                                        morningStatus: "pick",
+                                };
+                                const booking = await settleBooking.findByIdAndUpdate({ _id: req.params.bookingId }, { $push: { dailyStatus: dailyStatus }, $set: { morningStatus: "pick" } }, { new: true });
+                                return res.status(200).json({ status: 200, message: "Booking started successfully", data: booking });
+                        }
+                        if ((booking.eveningStatus == "pending") && (booking.morningStatus == "drop")) {
+                                let dailyStatus = {
+                                        date: new Date(Date.now()),
+                                        eveningStatus: "pick",
+                                };
+                                const booking = await settleBooking.findByIdAndUpdate({ _id: req.params.bookingId }, { $push: { dailyStatus: dailyStatus }, $set: { eveningStatus: "pick" } }, { new: true });
+                                return res.status(200).json({ status: 200, message: "Booking started successfully", data: booking });
+                        }
                 } else {
                         return res.status(400).json({ status: 400, message: "Invalid OTP", data: {} });
+                }
+        } catch (error) {
+                console.error("Error:", error);
+                return res.status(500).json({ status: 500, message: "Internal server error", data: error.message, });
+        }
+};
+exports.stopSettleBooking = async (req, res) => {
+        try {
+                const booking = await settleBooking.findOne({ _id: req.params.bookingId, driver: req.user.id, });
+                if (!booking) {
+                        return res.status(404).json({ status: 404, message: "Data not found", data: {} });
+                }
+                if (booking.morningStatus == "pick") {
+                        let dailyStatus = {
+                                date: new Date(Date.now()),
+                                morningStatus: "drop",
+                        };
+                        const booking = await settleBooking.findByIdAndUpdate({ _id: req.params.bookingId }, { $push: { dailyStatus: dailyStatus }, $set: { morningStatus: "drop" } }, { new: true });
+                        return res.status(200).json({ status: 200, message: "Booking stop successfully", data: booking });
+                }
+                if ((booking.eveningStatus == "pick") && (booking.morningStatus == "drop")) {
+                        let dailyStatus = {
+                                date: new Date(Date.now()),
+                                eveningStatus: "drop",
+                        };
+                        const booking = await settleBooking.findByIdAndUpdate({ _id: req.params.bookingId }, { $push: { dailyStatus: dailyStatus }, $set: { eveningStatus: "drop" } }, { new: true });
+                        return res.status(200).json({ status: 200, message: "Booking stop successfully", data: booking });
                 }
         } catch (error) {
                 console.error("Error:", error);
