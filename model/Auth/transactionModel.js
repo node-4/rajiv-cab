@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const transactionSchema = mongoose.Schema({
     user: {
         type: mongoose.Schema.ObjectId,
-        ref: "user",
+        ref: "User",
     },
     id: {
         type: String,
