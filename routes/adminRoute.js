@@ -9,6 +9,8 @@ const upload = multer({ storage: storage });
 const uploadserviceCategory = upload.fields([{ name: 'image', maxCount: 1 }, { name: 'banner', maxCount: 1 }]);
 const authJwt = require("../middleware/authJwt");
 module.exports = (app) => {
+  app.get('/api/v1/admin/getPrivileges', adminController.getPrivileges);
+  app.get('/api/v1/admin/getAllAdmin', adminController.getAllAdmin);
   app.post('/api/v1/admin/register', adminController.RegisterAdmin);
   app.post('/api/v1/admin/login', adminController.loginAdmin);
   app.get('/api/v1/admin/me', authJwt.verifyToken, adminController.getAdminDetails);
@@ -116,5 +118,14 @@ module.exports = (app) => {
   app.post("/api/v1/commission/add", adminController.addCommission);
   app.get("/api/v1/commission", adminController.getCommission);
   app.delete("/api/v1/commission", adminController.deleteCommission);
-
+  app.get('/api/v1/getAllBookingTransaction', adminController.getAllBookingTransaction);
+  app.get('/api/v1/getAllWalletTransaction', adminController.getAllWalletTransaction);
+  app.get('/api/v1/getAllSosRequest', adminController.getAllSosRequest);
+  app.get('/api/v1/getSosRequestById/:id', adminController.getSosRequestById);
+  app.put('/api/v1/approvedRejectSosRequestById/:id', adminController.approvedRejectSosRequestById);
+  app.get('/api/v1/getAllRefundTransaction', adminController.getAllRefundTransaction);
+  app.get('/api/v1/getAllPayoutTransaction', adminController.getAllPayoutTransaction);
+  app.get('/api/v1/getPayoutRefundTransactionById/:id', adminController.getPayoutRefundTransactionById);
+  app.put('/api/v1/withdrawApprove/:id', upload.single('image'), adminController.withdrawApprove);
+  app.get('/api/v1/allDriverDetailForAdmin', adminController.allDriverDetail);
 }

@@ -4,6 +4,7 @@ const router = express.Router();
 const otpGenerator = require("otp-generator");
 const jwt = require("jsonwebtoken");
 const User = require("../model/Auth/userModel");
+const DriverDetail = require("../model/Auth/driverDetail");
 const category = require('../model/Category/genderCategory')
 const serviceCategory = require('../model/Category/serviceCategory');
 const Banner = require('../model/Banner/bannerModel');
@@ -24,19 +25,50 @@ const stateModel = require('../model/cityState/state')
 const commission = require('../model/Auth/commission')
 const settleBooking = require("../model/booking/settleBooking");
 const driverSettleBooking = require("../model/booking/driverSettleBooking");
+const bookingPayment = require("../model/Auth/bookingPayment");
+const transactionModel = require("../model/Auth/transactionModel");
 const Booking = require("../model/booking/booking");
+const payoutTransaction = require("../model/Auth/payoutTransaction");
+const sosRequest = require("../model/SOS/sosRequest");
 let Country = require('country-state-city').Country;
 let State = require('country-state-city').State;
 let City = require('country-state-city').City;
+
+exports.getPrivileges = async (req, res) => {
+        try {
+                const user = await User.find({ role: ["admin" || "superAdmin"] });
+                if (user.length == 0) {
+                        return res.status(404).send({ status: 404, message: "Privileges not found", data: {}, });
+                } else {
+                        return res.status(200).send({ status: 200, message: "Get Privileges data found", data: user, });
+                }
+        } catch (error) {
+                console.error(error);
+                return res.status(500).json({ message: "Server error" });
+        }
+};
+exports.getAllAdmin = async (req, res) => {
+        try {
+                const user = await User.find({ role: "admin" });
+                if (user.length == 0) {
+                        return res.status(404).send({ status: 404, message: "Admin not found", data: {}, });
+                } else {
+                        return res.status(200).send({ status: 200, message: "Get admin data found", data: user, });
+                }
+        } catch (error) {
+                console.error(error);
+                return res.status(500).json({ message: "Server error" });
+        }
+}
 exports.RegisterAdmin = async (req, res, next) => {
         try {
-                const { email, password } = req.body;
-                const existingUser = await User.findOne({ email, role: "admin" });
+                const { email, password, role } = req.body;
+                const existingUser = await User.findOne({ email, role: role });
                 if (existingUser) {
                         return res.status(409).json({ status: 409, message: "admin already exists", data: {} });
                 }
                 const hashedPassword = await bcrypt.hash(password, 8);
-                const newUser = await User.create({ email, password: hashedPassword, role: "admin", });
+                const newUser = await User.create({ email, password: hashedPassword, role: role, });
                 const token = jwt.sign({ id: newUser._id }, "node5flyweis");
                 const responseData = { _id: newUser._id, newUser, token, };
                 return res.status(201).json({ status: 201, message: "ADMIN registered successfully", data: responseData, });
@@ -47,8 +79,8 @@ exports.RegisterAdmin = async (req, res, next) => {
 };
 exports.loginAdmin = async (req, res) => {
         try {
-                const { email, password } = req.body;
-                const user = await User.findOne({ email: email, role: "admin" });
+                const { email, password, role } = req.body;
+                const user = await User.findOne({ email: email, role: role });
                 console.log(user);
                 if (!user) {
                         return res.status(404).send({ status: 404, message: "user not found ! not registered" });
@@ -2224,7 +2256,6 @@ exports.getSettleBookingById = async (req, res) => {
 };
 exports.addCommission = async (req, res, next) => {
         try {
-
                 let findVehicalType = await commission.findOne({ disCountType: req.body.disCountType });
                 if (findVehicalType) {
                         let adminCommission, driverCommission, disCountType;
@@ -2244,7 +2275,12 @@ exports.addCommission = async (req, res, next) => {
                         var obj = {
                                 adminCommission: adminCommission,
                                 driverCommission: driverCommission,
-                                disCountType: req.body.disCountType
+                                disCountType: req.body.disCountType,
+                                serviceTax: req.body.serviceTax,
+                                driverSearchRadius: req.body.driverSearchRadius,
+                                userCanScheduleBookAfterMin: req.body.userCanScheduleBookAfterMin,
+                                minimumTimeDriverFindInMinutes: req.body.minimumTimeDriverFindInMinutes,
+                                maximumTimeFindInMinutesDriverForRegularRide: req.body.maximumTimeFindInMinutesDriverForRegularRide,
                         };
                         const result = await commission.findByIdAndUpdate({ _id: findVehicalType._id }, { $set: obj }, { new: true });
                         if (result) {
@@ -2262,7 +2298,12 @@ exports.addCommission = async (req, res, next) => {
                         var obj = {
                                 adminCommission: adminCommission,
                                 driverCommission: driverCommission,
-                                disCountType: req.body.disCountType
+                                disCountType: req.body.disCountType,
+                                serviceTax: req.body.serviceTax,
+                                driverSearchRadius: req.body.driverSearchRadius,
+                                userCanScheduleBookAfterMin: req.body.userCanScheduleBookAfterMin,
+                                minimumTimeDriverFindInMinutes: req.body.minimumTimeDriverFindInMinutes,
+                                maximumTimeFindInMinutesDriverForRegularRide: req.body.maximumTimeFindInMinutesDriverForRegularRide,
                         };
                         let result = await commission(obj).save();
                         if (result) {
@@ -2304,6 +2345,178 @@ exports.getCommission = async (req, res) => {
                 return res.status(500).json({ status: 500, message: 'Server error', data: error });
         }
 };
+exports.getAllBookingTransaction = async (req, res) => {
+        try {
+                const acceptedOrders = await bookingPayment.find({}).populate("user driverId");
+                if (acceptedOrders.length == 0) {
+                        return res.status(404).json({ status: 404, message: "Data not found", data: {} });
+                }
+                return res.status(200).json({ status: 200, message: "Data found", data: acceptedOrders });
+        } catch (error) {
+                console.error("Error:", error);
+                return res.status(500).json({ status: 500, message: "Internal server error", data: error.message, });
+        }
+};
+exports.getAllWalletTransaction = async (req, res) => {
+        try {
+                const acceptedOrders = await transactionModel.find({}).populate("user");
+                if (acceptedOrders.length == 0) {
+                        return res.status(404).json({ status: 404, message: "Data not found", data: {} });
+                }
+                return res.status(200).json({ status: 200, message: "Data found", data: acceptedOrders });
+        } catch (error) {
+                console.error("Error:", error);
+                return res.status(500).json({ status: 500, message: "Internal server error", data: error.message, });
+        }
+};
+exports.getAllSosRequest = async (req, res) => {
+        try {
+                const acceptedOrders = await sosRequest.find({}).populate("user");
+                if (acceptedOrders.length == 0) {
+                        return res.status(404).json({ status: 404, message: "Data not found", data: {} });
+                }
+                return res.status(200).json({ status: 200, message: "sosRequest data found", data: acceptedOrders });
+        } catch (error) {
+                console.error("Error:", error);
+                return res.status(500).json({ status: 500, message: "Internal server error", data: error.message, });
+        }
+};
+exports.getSosRequestById = async (req, res) => {
+        try {
+                const findPrivacy = await sosRequest.findById({ _id: req.params.id }).populate('user');
+                if (findPrivacy) {
+                        return res.status(200).json({ status: 200, message: 'Data found for the specified', data: findPrivacy });
+                } else {
+                        return res.status(404).json({ status: 404, message: 'Data not found for the specified', data: {} });
+                }
+        } catch (error) {
+                console.error(error);
+                return res.status(500).json({ status: 500, message: 'Server error', data: error });
+        }
+};
+exports.approvedRejectSosRequestById = async (req, res) => {
+        try {
+                const findPrivacy = await sosRequest.findById({ _id: req.params.id }).populate('user');
+                if (findPrivacy) {
+                        let update = await sosRequest.findByIdAndUpdate({ _id: findPrivacy._id }, { $set: { status: req.body.status } }, { new: true });
+                        return res.status(200).json({ status: 200, message: 'Data found for the specified', data: update });
+                } else {
+                        return res.status(404).json({ status: 404, message: 'Data not found for the specified', data: {} });
+                }
+        } catch (error) {
+                console.error(error);
+                return res.status(500).json({ status: 500, message: 'Server error', data: error });
+        }
+};
+exports.getAllPayoutTransaction = async (req, res) => {
+        try {
+                const acceptedOrders = await payoutTransaction.find({ transactionType: "PAYOUT" }).populate("userId");
+                if (acceptedOrders.length == 0) {
+                        return res.status(404).json({ status: 404, message: "Data not found", data: {} });
+                }
+                return res.status(200).json({ status: 200, message: "Data found", data: acceptedOrders });
+        } catch (error) {
+                console.error("Error:", error);
+                return res.status(500).json({ status: 500, message: "Internal server error", data: error.message, });
+        }
+};
+exports.getAllRefundTransaction = async (req, res) => {
+        try {
+                const acceptedOrders = await payoutTransaction.find({ transactionType: "REFUND" }).populate("userId");
+                if (acceptedOrders.length == 0) {
+                        return res.status(404).json({ status: 404, message: "Data not found", data: {} });
+                }
+                return res.status(200).json({ status: 200, message: "Data found", data: acceptedOrders });
+        } catch (error) {
+                console.error("Error:", error);
+                return res.status(500).json({ status: 500, message: "Internal server error", data: error.message, });
+        }
+};
+exports.getPayoutRefundTransactionById = async (req, res) => {
+        try {
+                const findPrivacy = await payoutTransaction.findById({ _id: req.params.id }).populate('userId');
+                if (findPrivacy) {
+                        return res.status(200).json({ status: 200, message: 'Data found for the specified', data: findPrivacy });
+                } else {
+                        return res.status(404).json({ status: 404, message: 'Data not found for the specified', data: {} });
+                }
+        } catch (error) {
+                console.error(error);
+                return res.status(500).json({ status: 500, message: 'Server error', data: error });
+        }
+};
+exports.withdrawApprove = async (req, res, next) => {
+        try {
+                let adminResult = await User.findOne({ _id: req.user.id });
+                if (!adminResult) {
+                        return res.status(404).send({ status: 404, message: "user not found ", data: {} });
+                }
+                else {
+                        let data = await payoutTransaction.findOne({ _id: req.params._id, transactionType: "PAYOUT" });
+                        if (!data) {
+                                return res.status(404).send({ status: 404, message: "Data not found ", data: {} });
+                        } else {
+                                if (data.status == "PAID") {
+                                        return res.status(409).send({ status: 409, message: "Already Paid ", data: {} });
+                                } else {
+                                        if (req.body.status == "PAID") {
+                                                if (req.file) {
+                                                        req.body.screenShot = req.file.path;
+                                                        let update = await payoutTransaction.findByIdAndUpdate({ _id: data._id }, { $set: req.body }, { new: true });
+                                                        if (update) {
+                                                                let findUser = await userModel.findOne({ _id: data.userId });
+                                                                let amount = findUser.walletBalance - update.amount
+                                                                await userModel.findByIdAndUpdate({ _id: data.userId }, { $set: { walletBalance: amount } }, { new: true });
+                                                                return res.status(200).send({ status: 200, message: "Send money to driver successfully ", data: update });
+                                                        }
+                                                }
+                                        } else if (req.body.status == "PENDING") {
+                                                if (req.file) {
+                                                        req.body.screenShot = req.file.path;
+                                                        let update = await payoutTransaction.findByIdAndUpdate({ _id: data._id }, { $set: req.body }, { new: true });
+                                                        if (update) {
+                                                                return res.status(200).send({ status: 200, message: "Send money to driver successfully ", data: update });
+                                                        }
+                                                } else {
+                                                        let update = await payoutTransaction.findByIdAndUpdate({ _id: data._id }, { $set: req.body }, { new: true });
+                                                        if (update) {
+                                                                return res.status(200).send({ status: 200, message: "Send money to driver successfully ", data: update });
+                                                        }
+                                                }
+                                        } else {
+                                                if (req.file) {
+                                                        req.body.screenShot = req.file.path;
+                                                        let update = await payoutTransaction.findByIdAndUpdate({ _id: data._id }, { $set: req.body }, { new: true });
+                                                        if (update) {
+                                                                return res.status(200).send({ status: 200, message: "Send money to driver successfully ", data: update });
+                                                        }
+                                                } else {
+                                                        let update = await payoutTransaction.findByIdAndUpdate({ _id: data._id }, { $set: req.body }, { new: true });
+                                                        if (update) {
+                                                                return res.status(200).send({ status: 200, message: "Send money to driver successfully ", data: update });
+                                                        }
+                                                }
+                                        }
+                                }
+                        }
+
+                }
+        } catch (error) {
+                return res.status(500).json({ status: 500, message: "Internal server error", data: error.message, });
+        }
+};
+exports.allDriverDetail = async (req, res) => {
+        try {
+                const driverDetails = await DriverDetail.find({}).populate("driver city driverVehicleCategory");
+                if (driverDetails.length == 0) {
+                        return res.status(404).json({ status: 404, message: "Driver details not found" });
+                }
+                return res.status(200).json({ status: 200, message: "Driver details found", data: driverDetails });
+        } catch (error) {
+                console.error("Error:", error);
+                return res.status(500).json({ status: 500, message: "Internal server error", data: error, });
+        }
+}
 const reffralCode = async () => {
         var digits = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         let OTP = '';

@@ -2,18 +2,33 @@ const mongoose = require('mongoose');
 const schema = mongoose.Schema;
 const mongoosePaginate = require('mongoose-paginate');
 const DocumentSchema = schema({
+    serviceTax: {
+        type: Number
+    },
+    disCountType: {
+        type: String,
+        enum: ["PERCENTAGE", "FLAT"]
+    },
     adminCommission: {
         type: Number
     },
     driverCommission: {
-        type:Number
+        type: Number
     },
-    disCountType:{
-        type:String,
-        enum:["PERCENTAGE","FLAT"]
+    driverSearchRadius: {
+        type: Number
     },
-    isActive:{
-        type:Boolean,
+    userCanScheduleBookAfterMin: {
+        type: Number
+    },
+    minimumTimeDriverFindInMinutes: {
+        type: Number
+    },
+    maximumTimeFindInMinutesDriverForRegularRide: {
+        type: Number
+    },
+    isActive: {
+        type: Boolean,
         default: false
     }
 }, { timestamps: true })

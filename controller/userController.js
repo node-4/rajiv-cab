@@ -13,6 +13,10 @@ const dailyPricing = require("../model/pricing/dailyPricing");
 const hourlyModel = require('../model/pricing/hourlyModel');
 const cityModel = require('../model/cityState/cityModel')
 const superCarPricing = require('../model/pricing/superCarPricing')
+const transactionModel = require("../model/Auth/transactionModel");
+const payoutTransaction = require("../model/Auth/payoutTransaction");
+const sosRequest = require("../model/SOS/sosRequest");
+const ifsc = require('ifsc');
 exports.registerUser = async (req, res) => {
     try {
         const { name, email, gender, mobileNumber, birthday, category } = req.body;
@@ -465,6 +469,248 @@ exports.getOrder = async (req, res) => {
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: 'Internal server error' });
+    }
+};
+exports.addMoney = async (req, res) => {
+    try {
+        const { balance, paymentMode } = req.body;
+        let findUser = await User.findOne({ _id: req.user.id });
+        if (!findUser) {
+            return res.status(404).send({ status: 404, message: "user not found ", data: {} });
+        } else {
+            findUser.wallet = findUser.wallet + parseFloat(balance);
+            await findUser.save();
+            let id = await reffralCode();
+            let obj = {
+                user: req.user.id,
+                id: id,
+                amount: parseFloat(balance),
+                paymentMode: paymentMode,
+                type: "Credit",
+            }
+            const newUser = await transactionModel.create(obj);
+            return res.status(200).json({ data: findUser, success: true, message: `Added to wallet`, status: 200, });
+        }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+exports.getWallet = async (req, res) => {
+    try {
+        let findUser = await User.findOne({ _id: req.user.id });
+        if (!findUser) {
+            return res.status(404).send({ status: 404, message: "user not found ", data: {} });
+        } else {
+            return res.status(200).json({ data: findUser, success: true, message: 'Wallet details retrieved successfully' });
+        }
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+};
+exports.removeMoney = async (req, res) => {
+    try {
+        const { balance, paymentMode } = req.body;
+        let findUser = await User.findOne({ _id: req.user.id });
+        if (!findUser) {
+            return res.status(404).send({ status: 404, message: "user not found ", data: {} });
+        } else {
+            if (findUser.wallet < balance) {
+                return res.status(400).json({ message: 'Insufficient balance' });
+            }
+            findUser.wallet = findUser.wallet - parseFloat(balance);
+            await findUser.save();
+            let id = await reffralCode()
+            let obj = {
+                user: req.user.id,
+                amount: parseFloat(balance),
+                paymentMode: paymentMode,
+                id: id,
+                type: "Debit",
+            }
+            const newUser = await transactionModel.create(obj);
+            return res.status(200).json({ data: findUser, success: true, message: `Remove to wallet`, status: 200, });
+        }
+    } catch (error) {
+        return res.status(500).json({ message: error.message });
+    }
+};
+exports.sendSosRequest = async (req, res) => {
+    try {
+        let findUser = await User.findOne({ _id: req.user.id });
+        if (!findUser) {
+            return res.status(404).send({ status: 404, message: "user not found ", data: {} });
+        }
+        let id = await reffralCode();
+        const userLatitude = parseFloat(req.body.latitude);
+        const userLongitude = parseFloat(req.body.longitude);
+        let location = { type: "Point", coordinates: [userLatitude, userLongitude], }
+        let obj = {
+            user: findUser._id,
+            id: id,
+            locationInWord: req.body.locationInWord,
+            reason: req.body.reason,
+            location: location
+        }
+        const newUser = await sosRequest.create(obj);
+        return res.status(200).json({ status: 200, message: "SOS request successfully", data: newUser, });
+    } catch (error) {
+        console.error("Error:", error);
+        return res.status(500).json({ status: 500, message: "Internal server error", data: error.message, });
+    }
+};
+exports.withdrawPayOutRequest = async (req, res, next) => {
+    try {
+        let user = await User.findOne({ _id: req.user.id });
+        if (!user) {
+            return res.status(404).send({ status: 404, message: "user not found ", data: {} });
+        } else {
+            if (user.walletBalance < req.body.amount) {
+                return res.status(403).json({ status: 403, message: "In sufficient money.", data: {}, });
+            } else {
+                let transactionFind = await payoutTransaction.findOne({ amount: req.body.amount, userId: user._id, status: "PENDING", transactionType: "PAYOUT" });
+                if (transactionFind) {
+                    return res.status(409).send({ status: 409, message: "Already exit ", data: {} });
+                } else {
+                    if (req.body.paymentMethod == "BANK") {
+                        let data1 = req.body.ifsc
+                        let data2 = data1.toUpperCase()
+                        let data = await ifsc.fetchDetails(data2);
+                        req.body.userId = user._id;
+                        req.body.bank = data.BANK;
+                        req.body.ifsc = data.IFSC;
+                        req.body.transactionType = "PAYOUT"
+                        let transaction1 = await payoutTransaction(req.body).save();
+                        if (transaction1) {
+                            return res.status(200).json({ status: 200, message: "Your payment request sent successfully", data: transaction1, });
+                        }
+                    } else if (req.body.paymentMethod == "GOOGLE_PAY") {
+                        req.body.userId = user._id;
+                        req.body.name = req.body.name;
+                        req.body.mobileNumber = req.body.mobileNumber;
+                        req.body.upiMobile = "MOBILE"
+                        req.body.message = req.body.message;
+                        req.body.transactionType = "PAYOUT";
+                        let transaction1 = await payoutTransaction(req.body).save();
+                        if (transaction1) {
+                            return res.status(200).json({ status: 200, message: "Your payment request sent successfully", data: transaction1, });
+                        }
+                    } else {
+                        req.body.userId = user._id;
+                        req.body.mobileNumber = req.body.mobileNumber;
+                        req.body.name = req.body.name;
+                        req.body.message = req.body.message;
+                        req.body.transactionType = "PAYOUT";
+                        let transaction1 = await payoutTransaction(req.body).save();
+                        if (transaction1) {
+                            return res.status(200).json({ status: 200, message: "Your payment request sent successfully", data: transaction1, });
+                        }
+                    }
+                }
+            }
+
+        }
+    } catch (error) {
+        if (error == 'Invalid IFSC Code') {
+            return res.status(404).json({ status: 404, message: "Invalid IFSC Code", data: {}, });
+        } else {
+            return res.status(500).json({ status: 500, message: "Internal server error", data: error.message, });
+        }
+
+    }
+};
+exports.withdrawRefundRequest = async (req, res, next) => {
+    try {
+        let user = await User.findOne({ _id: req.user.id });
+        if (!user) {
+            return res.status(404).send({ status: 404, message: "user not found ", data: {} });
+        } else {
+            if (user.walletBalance < req.body.amount) {
+                return res.status(403).json({ status: 403, message: "In sufficient money.", data: {}, });
+            } else {
+                let transactionFind = await payoutTransaction.findOne({ amount: req.body.amount, userId: user._id, status: "PENDING", transactionType: "REFUND" });
+                if (transactionFind) {
+                    return res.status(409).send({ status: 409, message: "Already exit ", data: {} });
+                } else {
+                    if (req.body.paymentMethod == "BANK") {
+                        let data1 = req.body.ifsc
+                        let data2 = data1.toUpperCase()
+                        let data = await ifsc.fetchDetails(data2);
+                        req.body.userId = user._id;
+                        req.body.bank = data.BANK;
+                        req.body.ifsc = data.IFSC;
+                        req.body.transactionType = "REFUND"
+                        let transaction1 = await payoutTransaction(req.body).save();
+                        if (transaction1) {
+                            return res.status(200).json({ status: 200, message: "Your payment request sent successfully", data: transaction1, });
+                        }
+                    } else if (req.body.paymentMethod == "GOOGLE_PAY") {
+                        req.body.userId = user._id;
+                        req.body.name = req.body.name;
+                        req.body.mobileNumber = req.body.mobileNumber;
+                        req.body.upiMobile = "MOBILE"
+                        req.body.message = req.body.message;
+                        req.body.transactionType = "REFUND";
+                        let transaction1 = await payoutTransaction(req.body).save();
+                        if (transaction1) {
+                            return res.status(200).json({ status: 200, message: "Your payment request sent successfully", data: transaction1, });
+                        }
+                    } else {
+                        req.body.userId = user._id;
+                        req.body.mobileNumber = req.body.mobileNumber;
+                        req.body.name = req.body.name;
+                        req.body.message = req.body.message;
+                        req.body.transactionType = "REFUND";
+                        let transaction1 = await payoutTransaction(req.body).save();
+                        if (transaction1) {
+                            return res.status(200).json({ status: 200, message: "Your payment request sent successfully", data: transaction1, });
+                        }
+                    }
+                }
+            }
+
+        }
+    } catch (error) {
+        if (error == 'Invalid IFSC Code') {
+            return res.status(404).json({ status: 404, message: "Invalid IFSC Code", data: {}, });
+        } else {
+            return res.status(500).json({ status: 500, message: "Internal server error", data: error.message, });
+        }
+
+    }
+};
+exports.getAllPayoutTransactionForUser = async (req, res) => {
+    try {
+        let user = await User.findOne({ _id: req.user.id });
+        if (!user) {
+            return res.status(404).send({ status: 404, message: "user not found ", data: {} });
+        } else {
+            const acceptedOrders = await payoutTransaction.find({ userId: user._id, transactionType: "PAYOUT" }).populate("userId");
+            if (acceptedOrders.length == 0) {
+                return res.status(404).json({ status: 404, message: "Data not found", data: {} });
+            }
+            return res.status(200).json({ status: 200, message: "Data found", data: acceptedOrders });
+        }
+    } catch (error) {
+        console.error("Error:", error);
+        return res.status(500).json({ status: 500, message: "Internal server error", data: error.message, });
+    }
+};
+exports.getAllRefundTransactionForUser = async (req, res) => {
+    try {
+        let user = await User.findOne({ _id: req.user.id });
+        if (!user) {
+            return res.status(404).send({ status: 404, message: "user not found ", data: {} });
+        } else {
+            const acceptedOrders = await payoutTransaction.find({ userId: user._id, transactionType: "REFUND" }).populate("userId");
+            if (acceptedOrders.length == 0) {
+                return res.status(404).json({ status: 404, message: "Data not found", data: {} });
+            }
+            return res.status(200).json({ status: 200, message: "Data found", data: acceptedOrders });
+        }
+    } catch (error) {
+        console.error("Error:", error);
+        return res.status(500).json({ status: 500, message: "Internal server error", data: error.message, });
     }
 };
 const reffralCode = async () => {

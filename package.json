@@ -27,6 +27,7 @@
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "geolib": "^3.3.4",
+    "ifsc": "^2.0.24",
     "jsonwebtoken": "^9.0.0",
     "moment": "^2.29.4",
     "mongoose": "^7.3.0",

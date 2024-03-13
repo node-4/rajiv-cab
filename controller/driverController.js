@@ -350,12 +350,15 @@ exports.bookingPayment = async (req, res) => {
                                         if (user) {
                                                 let updateCash = await User.findByIdAndUpdate({ _id: user._id }, { $set: { adminCash: user.adminCash + adminCommission } }, { new: true })
                                         }
+                                        let id = await reffralCode()
                                         let obj = {
                                                 user: booking.userId,
                                                 driverId: booking.driver,
                                                 bookingId: booking._id,
-                                                id: booking.bookingId,
+                                                id: id,
                                                 amount: booking.totalPrice,
+                                                adminAmount: adminCommission,
+                                                driverAmount: driverCommission,
                                                 paymentMode: req.body.paymentMode,
                                                 transactionStatus: "SUCCESS",
                                         }
@@ -377,12 +380,15 @@ exports.bookingPayment = async (req, res) => {
                                         if (user) {
                                                 let updateCash = await User.findByIdAndUpdate({ _id: user._id }, { $set: { wallet: user.wallet + driverCommission } }, { new: true })
                                         }
+                                        let id = await reffralCode()
                                         let obj = {
                                                 user: booking.userId,
                                                 driverId: booking.driver,
                                                 bookingId: booking._id,
-                                                id: booking.bookingId,
+                                                id: id,
                                                 amount: booking.totalPrice,
+                                                adminAmount: adminCommission,
+                                                driverAmount: driverCommission,
                                                 paymentMode: req.body.paymentMode,
                                                 transactionStatus: "SUCCESS",
                                         }
@@ -394,11 +400,12 @@ exports.bookingPayment = async (req, res) => {
                         if (req.body.paymentMode == "CASH") {
                                 const updatedbooking = await Booking.findByIdAndUpdate({ _id: booking._id }, { $set: { isCommission: false, paymentMode: "cash" } }, { new: true });
                                 if (updatedbooking) {
+                                        let id = await reffralCode();
                                         let obj = {
                                                 user: booking.userId,
                                                 driverId: booking.driver,
                                                 bookingId: booking._id,
-                                                id: booking.bookingId,
+                                                id: id,
                                                 amount: booking.totalPrice,
                                                 paymentMode: req.body.paymentMode,
                                                 transactionStatus: "SUCCESS",
@@ -409,11 +416,12 @@ exports.bookingPayment = async (req, res) => {
                         } else {
                                 const updatedbooking = await Booking.findByIdAndUpdate({ _id: booking._id }, { $set: { isCommission: false, paymentMode: "upi" } }, { new: true });
                                 if (updatedbooking) {
+                                        let id = await reffralCode();
                                         let obj = {
                                                 user: booking.userId,
                                                 driverId: booking.driver,
                                                 bookingId: booking._id,
-                                                id: booking.bookingId,
+                                                id: id,
                                                 amount: booking.totalPrice,
                                                 paymentMode: req.body.paymentMode,
                                                 transactionStatus: "SUCCESS",

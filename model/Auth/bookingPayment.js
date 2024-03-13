@@ -21,6 +21,12 @@ const transactionStatus = new Schema({
   amount: {
     type: Number
   },
+  adminAmount: {
+    type: Number
+  },
+  driverAmount: {
+    type: Number
+  },
   paymentMode: {
     type: String,
     enum: ["CASH", "WALLET"],

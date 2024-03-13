@@ -61,7 +61,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ["user", "admin", "driver", "vendor"],
+    enum: ["user", "admin", "driver", "vendor", "superAdmin"],
     default: "user",
   },
   isBlock: {
