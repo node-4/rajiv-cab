@@ -62,7 +62,7 @@ exports.verifyOtpLogin = async (req, res) => {
                 user.isVerified = true;
                 await user.save();
                 if (user.isVerified) {
-                        const token = jwt.sign({ id: user._id }, "node5flyweis");
+                        const token = jwt.sign({ id: user._id }, 'node5flyweis', { expiresIn: '1020d' });
                         return res.json({ message: "OTP verification successful.", token, user });
                 } else {
                         return res.status(401).json({ error: "User not verified" });

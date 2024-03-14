@@ -39,7 +39,6 @@ exports.verifyOtp = async (req, res) => {
         const otp = req.body.otp;
         const user = await User.findOne({ mobileNumber, role: "user" });
         if (!user) {
-            // User not found, handle accordingly
             return res.status(404).json({ error: "User not found" });
         }
         if (user.otp !== otp) {
@@ -48,7 +47,7 @@ exports.verifyOtp = async (req, res) => {
         user.isVerified = true;
         await user.save();
         if (user.isVerified) {
-            const token = jwt.sign({ id: user._id }, "node5flyweis");
+            const token = jwt.sign({ id: user._id }, 'node5flyweis', { expiresIn: '1020d' });
             return res.json({ message: "OTP verification successful.", token, user });
         } else {
             return res.status(401).json({ error: "User not verified" });
