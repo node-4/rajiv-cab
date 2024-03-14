@@ -36,6 +36,7 @@ const transactionStatus = new Schema({
     enum: ["PENDING", "SUCCESS", "FAILED"],
     default: "PENDING"
   },
+
 }, { timestamps: true })
 transactionStatus.plugin(mongoosePaginate);
 module.exports = mongoose.model("bookingPayment", transactionStatus);
