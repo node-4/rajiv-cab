@@ -99,6 +99,10 @@ const userLocationSchema = new mongoose.Schema({
   totalHour: {
     type: String,
   },
+  outOfStationType: {
+    type: String,
+    enum: ["oneSide", "bothSide"]
+  },
   type: {
     type: String,
     enum: ['Basic', 'Hourly', 'superCar'],

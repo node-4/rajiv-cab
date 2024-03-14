@@ -1,8 +1,11 @@
+let Country = require('country-state-city').Country;
+let State = require('country-state-city').State;
+let City = require('country-state-city').City;
 const bcrypt = require("bcryptjs");
 const express = require("express");
-const router = express.Router();
 const otpGenerator = require("otp-generator");
 const jwt = require("jsonwebtoken");
+const router = express.Router();
 const User = require("../model/Auth/userModel");
 const DriverDetail = require("../model/Auth/driverDetail");
 const category = require('../model/Category/genderCategory')
@@ -30,9 +33,11 @@ const transactionModel = require("../model/Auth/transactionModel");
 const Booking = require("../model/booking/booking");
 const payoutTransaction = require("../model/Auth/payoutTransaction");
 const sosRequest = require("../model/SOS/sosRequest");
-let Country = require('country-state-city').Country;
-let State = require('country-state-city').State;
-let City = require('country-state-city').City;
+const appSetting = require("../model/settin/appSetting");
+const emergencyDetails = require("../model/settin/emergencyDetails");
+const mapSetting = require("../model/settin/mapSetting");
+const referralSetting = require("../model/settin/referralSetting");
+const walletSetting = require("../model/settin/walletSetting");
 
 exports.getPrivileges = async (req, res) => {
         try {
@@ -1908,11 +1913,7 @@ exports.getOutStationPricingByDistance = async (req, res) => {
                                 totalPrice = totalPrice;
                                 onBaseOff = "noOne";
                         }
-                        return res.status(200).json({
-                                success: true, message: 'Prices calculated successfully', vehicle: allPricingDetails.vehicle, distanceInKm,
-                                totalPrice,
-                                onBaseOff
-                        });
+                        return res.status(200).json({ success: true, message: 'Prices calculated successfully', vehicle: allPricingDetails.vehicle, distanceInKm, totalPrice, onBaseOff });
                 }
         } catch (error) {
                 console.error(error);
@@ -1959,7 +1960,27 @@ exports.getSuperCarPricingByDistance = async (req, res) => {
                 return res.status(500).json({ success: false, message: 'Internal server error' });
         }
 };
-
+exports.getVehicleAmbulanceByDistance = async (req, res) => {
+        try {
+                const { distanceInKm, vehicleAmbulanceId } = req.body;
+                console.log(req.body)
+                const userId = req.user;
+                const user = await User.findById(userId);
+                if (!user) {
+                        return res.status(404).json({ success: false, message: 'User not found' });
+                }
+                const allPricingDetails = await vehicleAmbulance.findOne({ _id: vehicleAmbulanceId });
+                if (!allPricingDetails) {
+                        return res.status(404).json({ success: false, message: 'No pricing details found' });
+                } else {
+                        let totalPrice = (allPricingDetails.perKm * distanceInKm) + (allPricingDetails.basePrice + allPricingDetails.taxRate + allPricingDetails.gstRate + allPricingDetails.serviceCharge + allPricingDetails.nightCharges + allPricingDetails.waitingCharge + allPricingDetails.trafficCharge);
+                        return res.status(200).json({ success: true, message: 'Prices calculated successfully', data: allPricingDetails, distanceInKm, totalPrice, });
+                }
+        } catch (error) {
+                console.error(error);
+                return res.status(500).json({ success: false, message: 'Internal server error' });
+        }
+};
 // exports.getOutStationPricingByDistance = async (req, res) => {
 //         try {
 //                 const { distanceInKm } = req.body;
@@ -2517,6 +2538,340 @@ exports.allDriverDetail = async (req, res) => {
                 return res.status(500).json({ status: 500, message: "Internal server error", data: error, });
         }
 }
+exports.addEmergencyDetails = async (req, res, next) => {
+        try {
+                let findVehicalType = await emergencyDetails.findOne();
+                if (findVehicalType) {
+                        var obj = {
+                                phone: req.body.phone || findVehicalType.phone,
+                                phoneText: req.body.phoneText || findVehicalType.phoneText,
+                                policeNumber: req.body.policeNumber || findVehicalType.policeNumber,
+                                policeNumberText: req.body.policeNumberText || findVehicalType.policeNumberText,
+                                ambulanceNumber: req.body.ambulanceNumber || findVehicalType.ambulanceNumber,
+                                ambulanceNumberText: req.body.ambulanceNumberText || findVehicalType.ambulanceNumberText,
+                        };
+                        const result = await emergencyDetails.findByIdAndUpdate({ _id: findVehicalType._id }, { $set: obj }, { new: true });
+                        if (result) {
+                                return res.status(200).json({ status: 200, message: 'add emergencyDetails successfully.', data: result });
+                        }
+                } else {
+                        var obj = {
+                                phone: req.body.phone,
+                                phoneText: req.body.phoneText,
+                                policeNumber: req.body.policeNumber,
+                                policeNumberText: req.body.policeNumberText,
+                                ambulanceNumber: req.body.ambulanceNumber,
+                                ambulanceNumberText: req.body.ambulanceNumberText,
+                        };
+                        let result = await emergencyDetails(obj).save();
+                        if (result) {
+                                return res.status(200).json({ status: 200, message: 'add emergencyDetails successfully.', data: result });
+                        }
+                }
+        } catch (error) {
+                console.error(error);
+                return res.status(500).json({ status: 500, message: 'Server error', data: error });
+        }
+};
+exports.deleteEmergencyDetails = async (req, res, next) => {
+        try {
+                let findVehicalType = await emergencyDetails.findOne({ _id: req.params.id });
+                if (!findVehicalType) {
+                        return res.status(404).send({ status: 404, message: "emergencyDetails not found", data: {}, });
+                } else {
+                        let updates = await emergencyDetails.findByIdAndDelete({ _id: findVehicalType._id });
+                        if (updates) {
+                                return res.status(200).json({ status: 200, message: 'Delete successully', data: updates });
+                        }
+                }
+
+        } catch (error) {
+                console.log(error)
+                return res.status(500).json({ status: 500, message: 'Server error', data: error });
+        }
+};
+exports.getEmergencyDetails = async (req, res) => {
+        try {
+                const booking = await emergencyDetails.findOne();
+                if (booking) {
+                        return res.status(200).json({ status: 200, message: 'EmergencyDetails found successfully', data: booking });
+                } else {
+                        return res.status(404).json({ status: 404, message: 'EmergencyDetails not found.', data: booking });
+                }
+        } catch (error) {
+                console.error(error);
+                return res.status(500).json({ status: 500, message: 'Server error', data: error });
+        }
+};
+exports.addMapSetting = async (req, res, next) => {
+        try {
+                let findVehicalType = await mapSetting.findOne();
+                if (findVehicalType) {
+                        var obj = {
+                                googleMapKeyForWebApp: req.body.googleMapKeyForWebApp || findVehicalType.googleMapKeyForWebApp,
+                                googleMapKeyForDistanceMatrix: req.body.googleMapKeyForDistanceMatrix || findVehicalType.googleMapKeyForDistanceMatrix,
+                                googleSheetId: req.body.googleSheetId || findVehicalType.googleSheetId,
+                        };
+                        const result = await mapSetting.findByIdAndUpdate({ _id: findVehicalType._id }, { $set: obj }, { new: true });
+                        if (result) {
+                                return res.status(200).json({ status: 200, message: 'add MapSetting successfully.', data: result });
+                        }
+                } else {
+                        var obj = {
+                                googleMapKeyForWebApp: req.body.googleMapKeyForWebApp,
+                                googleMapKeyForDistanceMatrix: req.body.googleMapKeyForDistanceMatrix,
+                                googleSheetId: req.body.googleSheetId,
+                        };
+                        let result = await mapSetting(obj).save();
+                        if (result) {
+                                return res.status(200).json({ status: 200, message: 'add MapSetting successfully.', data: result });
+                        }
+                }
+        } catch (error) {
+                console.error(error);
+                return res.status(500).json({ status: 500, message: 'Server error', data: error });
+        }
+};
+exports.deleteMapSetting = async (req, res, next) => {
+        try {
+                let findVehicalType = await mapSetting.findOne({ _id: req.params.id });
+                if (!findVehicalType) {
+                        return res.status(404).send({ status: 404, message: "mapSetting not found", data: {}, });
+                } else {
+                        let updates = await mapSetting.findByIdAndDelete({ _id: findVehicalType._id });
+                        if (updates) {
+                                return res.status(200).json({ status: 200, message: 'Delete successully', data: updates });
+                        }
+                }
+
+        } catch (error) {
+                console.log(error)
+                return res.status(500).json({ status: 500, message: 'Server error', data: error });
+        }
+};
+exports.getMapSetting = async (req, res) => {
+        try {
+                const booking = await mapSetting.findOne();
+                if (booking) {
+                        return res.status(200).json({ status: 200, message: 'MapSetting found successfully', data: booking });
+                } else {
+                        return res.status(404).json({ status: 404, message: 'MapSetting not found.', data: booking });
+                }
+        } catch (error) {
+                console.error(error);
+                return res.status(500).json({ status: 500, message: 'Server error', data: error });
+        }
+};
+exports.addReferralSetting = async (req, res, next) => {
+        try {
+                let findVehicalType = await referralSetting.findOne();
+                if (findVehicalType) {
+                        var obj = {
+                                referralForDriver: req.body.referralForDriver || findVehicalType.referralForDriver,
+                                referralForUser: req.body.referralForUser || findVehicalType.referralForUser,
+                        };
+                        const result = await referralSetting.findByIdAndUpdate({ _id: findVehicalType._id }, { $set: obj }, { new: true });
+                        if (result) {
+                                return res.status(200).json({ status: 200, message: 'add referralSetting successfully.', data: result });
+                        }
+                } else {
+                        var obj = {
+                                referralForDriver: req.body.referralForDriver,
+                                referralForUser: req.body.referralForUser,
+                        };
+                        let result = await referralSetting(obj).save();
+                        if (result) {
+                                return res.status(200).json({ status: 200, message: 'add referralSetting successfully.', data: result });
+                        }
+                }
+        } catch (error) {
+                console.error(error);
+                return res.status(500).json({ status: 500, message: 'Server error', data: error });
+        }
+};
+exports.deleteReferralSetting = async (req, res, next) => {
+        try {
+                let findVehicalType = await referralSetting.findOne({ _id: req.params.id });
+                if (!findVehicalType) {
+                        return res.status(404).send({ status: 404, message: "referralSetting not found", data: {}, });
+                } else {
+                        let updates = await referralSetting.findByIdAndDelete({ _id: findVehicalType._id });
+                        if (updates) {
+                                return res.status(200).json({ status: 200, message: 'Delete successully', data: updates });
+                        }
+                }
+
+        } catch (error) {
+                console.log(error)
+                return res.status(500).json({ status: 500, message: 'Server error', data: error });
+        }
+};
+exports.getReferralSetting = async (req, res) => {
+        try {
+                const booking = await referralSetting.findOne();
+                if (booking) {
+                        return res.status(200).json({ status: 200, message: 'ReferralSetting found successfully', data: booking });
+                } else {
+                        return res.status(404).json({ status: 404, message: 'ReferralSetting not found.', data: booking });
+                }
+        } catch (error) {
+                console.error(error);
+                return res.status(500).json({ status: 500, message: 'Server error', data: error });
+        }
+};
+exports.addWalletSetting = async (req, res, next) => {
+        try {
+                let findVehicalType = await walletSetting.findOne();
+                if (findVehicalType) {
+                        var obj = {
+                                walletMinimumAmount: req.body.walletMinimumAmount || findVehicalType.walletMinimumAmount,
+                                walletMinimumAmountToAdd: req.body.walletMinimumAmountToAdd || findVehicalType.walletMinimumAmountToAdd,
+                                walletMaximumAmountToAdd: req.body.walletMaximumAmountToAdd || findVehicalType.walletMaximumAmountToAdd,
+                                driverWalletMinimumAmountToGetOrder: req.body.driverWalletMinimumAmountToGetOrder || findVehicalType.driverWalletMinimumAmountToGetOrder,
+                        };
+                        const result = await walletSetting.findByIdAndUpdate({ _id: findVehicalType._id }, { $set: obj }, { new: true });
+                        if (result) {
+                                return res.status(200).json({ status: 200, message: 'add walletSetting successfully.', data: result });
+                        }
+                } else {
+                        var obj = {
+                                walletMinimumAmount: req.body.walletMinimumAmount,
+                                walletMinimumAmountToAdd: req.body.walletMinimumAmountToAdd,
+                                walletMaximumAmountToAdd: req.body.walletMaximumAmountToAdd,
+                                driverWalletMinimumAmountToGetOrder: req.body.driverWalletMinimumAmountToGetOrder,
+                        };
+                        let result = await walletSetting(obj).save();
+                        if (result) {
+                                return res.status(200).json({ status: 200, message: 'add walletSetting successfully.', data: result });
+                        }
+                }
+        } catch (error) {
+                console.error(error);
+                return res.status(500).json({ status: 500, message: 'Server error', data: error });
+        }
+};
+exports.deleteWalletSetting = async (req, res, next) => {
+        try {
+                let findVehicalType = await walletSetting.findOne({ _id: req.params.id });
+                if (!findVehicalType) {
+                        return res.status(404).send({ status: 404, message: "walletSetting not found", data: {}, });
+                } else {
+                        let updates = await walletSetting.findByIdAndDelete({ _id: findVehicalType._id });
+                        if (updates) {
+                                return res.status(200).json({ status: 200, message: 'Delete successully', data: updates });
+                        }
+                }
+
+        } catch (error) {
+                console.log(error)
+                return res.status(500).json({ status: 500, message: 'Server error', data: error });
+        }
+};
+exports.getWalletSetting = async (req, res) => {
+        try {
+                const booking = await walletSetting.findOne();
+                if (booking) {
+                        return res.status(200).json({ status: 200, message: 'WalletSetting found successfully', data: booking });
+                } else {
+                        return res.status(404).json({ status: 404, message: 'WalletSetting not found.', data: booking });
+                }
+        } catch (error) {
+                console.error(error);
+                return res.status(500).json({ status: 500, message: 'Server error', data: error });
+        }
+};
+exports.addAppSetting = async (req, res, next) => {
+        try {
+                let findVehicalType = await appSetting.findOne();
+                if (findVehicalType) {
+                        let logo, favicon;
+                        if (req.files['logo']) {
+                                logo = req.files['logo'];
+                                req.body.logo = logo[0].path;
+                        } else {
+                                req.body.logo = findVehicalType.logo
+                        }
+                        if (req.files['favicon']) {
+                                favicon = req.files['favicon'];
+                                req.body.favicon = favicon[0].path;
+                        } else {
+                                req.body.favicon = findVehicalType.favicon
+                        }
+                        var obj = {
+                                logo: req.body.logo,
+                                favicon: req.body.favicon,
+                                appName: req.body.appName || findVehicalType.appName,
+                                currencyName: req.body.currencyName || findVehicalType.currencyName,
+                                countryCode: req.body.countryCode || findVehicalType.countryCode,
+                                latitude: req.body.latitude || findVehicalType.latitude,
+                                longitude: req.body.longitude || findVehicalType.longitude,
+                        };
+                        const result = await appSetting.findByIdAndUpdate({ _id: findVehicalType._id }, { $set: obj }, { new: true });
+                        if (result) {
+                                return res.status(200).json({ status: 200, message: 'add appSetting successfully.', data: result });
+                        }
+                } else {
+                        let logo, favicon;
+                        if (req.files['logo']) {
+                                logo = req.files['logo'];
+                                req.body.logo = logo[0].path;
+                        } else {
+                                return res.status(404).json({ status: 404, message: 'Image not provide .', data: data });
+                        }
+                        if (req.files['favicon']) {
+                                favicon = req.files['favicon'];
+                                req.body.favicon = favicon[0].path;
+                        } else {
+                                return res.status(404).json({ status: 404, message: 'Favicon not provide.', data: data });
+                        }
+                        var obj = {
+                                logo: req.body.logo,
+                                favicon: req.body.favicon,
+                                appName: req.body.appName,
+                                currencyName: req.body.currencyName,
+                                countryCode: req.body.countryCode,
+                                latitude: req.body.latitude,
+                                longitude: req.body.longitude,
+                        };
+                        let result = await appSetting(obj).save();
+                        if (result) {
+                                return res.status(200).json({ status: 200, message: 'add appSetting successfully.', data: result });
+                        }
+                }
+        } catch (error) {
+                console.error(error);
+                return res.status(500).json({ status: 500, message: 'Server error', data: error });
+        }
+};
+exports.deleteAppSetting = async (req, res, next) => {
+        try {
+                let findVehicalType = await appSetting.findOne({ _id: req.params.id });
+                if (!findVehicalType) {
+                        return res.status(404).send({ status: 404, message: "appSetting not found", data: {}, });
+                } else {
+                        let updates = await appSetting.findByIdAndDelete({ _id: findVehicalType._id });
+                        if (updates) {
+                                return res.status(200).json({ status: 200, message: 'Delete successully', data: updates });
+                        }
+                }
+        } catch (error) {
+                console.log(error)
+                return res.status(500).json({ status: 500, message: 'Server error', data: error });
+        }
+};
+exports.getAppSetting = async (req, res) => {
+        try {
+                const booking = await appSetting.findOne();
+                if (booking) {
+                        return res.status(200).json({ status: 200, message: 'AppSetting found successfully', data: booking });
+                } else {
+                        return res.status(404).json({ status: 404, message: 'AppSetting not found.', data: booking });
+                }
+        } catch (error) {
+                console.error(error);
+                return res.status(500).json({ status: 500, message: 'Server error', data: error });
+        }
+};
 const reffralCode = async () => {
         var digits = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         let OTP = '';

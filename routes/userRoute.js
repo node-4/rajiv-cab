@@ -13,6 +13,7 @@ module.exports = (app) => {
   app.get("/api/v1/user/get/SettleBooking", authJwt.verifyToken, userController.getSettleBooking);
   app.post("/api/v1/user/createSuperCarBooking", authJwt.verifyToken, userController.createSuperCarBooking);
   app.post("/api/v1/user/createHourlyBooking", authJwt.verifyToken, userController.createHourlyBooking);
+  app.post("/api/v1/user/createOutStationBooking", authJwt.verifyToken, userController.createOutStationBooking);
   app.get("/api/v1/user/get/booking", authJwt.verifyToken, userController.getBooking);
   app.get("/api/v1/user/get/booking/by/:bookingId", userController.getBookingById);
   app.put("/api/v1/user/cancelBooking/:bookingId", authJwt.verifyToken, userController.cancelBooking);

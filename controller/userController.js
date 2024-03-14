@@ -16,6 +16,7 @@ const superCarPricing = require('../model/pricing/superCarPricing')
 const transactionModel = require("../model/Auth/transactionModel");
 const payoutTransaction = require("../model/Auth/payoutTransaction");
 const sosRequest = require("../model/SOS/sosRequest");
+const outStationPricing = require('../model/pricing/outStationPricing');
 const ifsc = require('ifsc');
 exports.registerUser = async (req, res) => {
     try {
@@ -347,6 +348,59 @@ exports.createAmbulanceBooking = async (req, res) => {
             price: totalCharges
         });
         return res.status(201).json(booking);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ status: 500, message: 'Server error', data: error });
+    }
+};
+exports.createOutStationBooking = async (req, res) => {
+    try {
+        const { type, vehicleId, city, distance, date, time, current, drop, hour } = req.body;
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).send({ status: 404, message: "User not found", data: {} });
+        }
+        const carId = await vehicle.findById(vehicleId);
+        if (!carId) {
+            return res.status(404).json({ status: 404, message: 'Vehicle not found', data: {} });
+        }
+        const findPrivacy2 = await cityModel.findOne({ city });
+        if (!findPrivacy2) {
+            return res.status(404).json({ status: 404, message: 'City not found', data: {} });
+        }
+        const pricingDetails = await outStationPricing.findOne({ city: findPrivacy2._id, vehicle: vehicleId, type: type }).populate('vehicle');
+        if (!pricingDetails || pricingDetails.length === 0) {
+            return res.status(404).json({ success: false, message: 'No pricing details found' });
+        } else {
+            let totalPrice = pricingDetails.price;
+            if (distance > pricingDetails.kmLimit) {
+                let kmAmount = pricingDetails.kmPrice * (distance - pricingDetails.kmLimit);
+                totalPrice += kmAmount;
+            } else if (hour > pricingDetails.hrLimit) {
+                totalPrice += pricingDetails.hrPrice * (hour - pricingDetails.hrLimit);
+            } else {
+                totalPrice = totalPrice;
+            }
+            let bookingId = await reffralCode();
+            const booking = await Booking.create({
+                userId: user._id,
+                current,
+                drop,
+                bookingId,
+                distance,
+                hour,
+                car: carId._id,
+                date,
+                time,
+                outOfStationType: type,
+                totalPrice,
+                type: "Basic",
+                serviceType: "outOfStation",
+                additionalCharges,
+                price: totalCharges
+            });
+            return res.status(201).json(booking);
+        }
     } catch (error) {
         console.error(error);
         return res.status(500).json({ status: 500, message: 'Server error', data: error });

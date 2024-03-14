@@ -7,6 +7,7 @@ cloudinary.config({ cloud_name: "dtijhcmaa", api_key: "624644714628939", api_sec
 const storage = new CloudinaryStorage({ cloudinary: cloudinary, params: { folder: "images/image", allowed_formats: ["jpg", "jpeg", "png", "PNG", "xlsx", "xls", "pdf", "PDF"], }, });
 const upload = multer({ storage: storage });
 const uploadserviceCategory = upload.fields([{ name: 'image', maxCount: 1 }, { name: 'banner', maxCount: 1 }]);
+const uploadAppSetting = upload.fields([{ name: 'favicon', maxCount: 1 }, { name: 'logo', maxCount: 1 }]);
 const authJwt = require("../middleware/authJwt");
 module.exports = (app) => {
   app.get('/api/v1/admin/getPrivileges', adminController.getPrivileges);
@@ -72,6 +73,7 @@ module.exports = (app) => {
   app.put('/api/v1/OutStationPricing/update/:id', adminController.updateOutStationPricing);
   app.delete('/api/v1/OutStationPricing/delete/:id', adminController.deleteOutStationPricing);
   app.post("/api/v1/OutStationPricing/by/distance", authJwt.verifyToken, adminController.getOutStationPricingByDistance);
+  app.post("/api/v1/VehicleAmbulance/by/distance", authJwt.verifyToken, adminController.getVehicleAmbulanceByDistance);
   app.post('/api/v1/BasePricing/add', adminController.addBasePricing);
   app.get('/api/v1/BasePricing/get', adminController.getBasePricing);
   app.get("/api/v1/BasePricing/:id", adminController.getBasePricingById);
@@ -128,4 +130,19 @@ module.exports = (app) => {
   app.get('/api/v1/getPayoutRefundTransactionById/:id', adminController.getPayoutRefundTransactionById);
   app.put('/api/v1/withdrawApprove/:id', upload.single('image'), adminController.withdrawApprove);
   app.get('/api/v1/allDriverDetailForAdmin', adminController.allDriverDetail);
+  app.post("/api/v1/emergencyDetails/add", adminController.addEmergencyDetails);
+  app.get("/api/v1/emergencyDetails", adminController.getEmergencyDetails);
+  app.delete("/api/v1/emergencyDetails", adminController.deleteEmergencyDetails);
+  app.post("/api/v1/mapSetting/add", adminController.addMapSetting);
+  app.get("/api/v1/mapSetting", adminController.getMapSetting);
+  app.delete("/api/v1/mapSetting", adminController.deleteMapSetting);
+  app.post("/api/v1/referralSetting/add", adminController.addReferralSetting);
+  app.get("/api/v1/referralSetting", adminController.getReferralSetting);
+  app.delete("/api/v1/referralSetting", adminController.deleteReferralSetting);
+  app.post("/api/v1/walletSetting/add", adminController.addWalletSetting);
+  app.get("/api/v1/walletSetting", adminController.getWalletSetting);
+  app.delete("/api/v1/walletSetting", adminController.deleteWalletSetting);
+  app.post("/api/v1/appSetting/add", uploadAppSetting, adminController.addAppSetting);
+  app.get("/api/v1/appSetting", adminController.getAppSetting);
+  app.delete("/api/v1/appSetting", adminController.deleteAppSetting);
 }
