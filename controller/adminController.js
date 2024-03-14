@@ -2468,62 +2468,57 @@ exports.getPayoutRefundTransactionById = async (req, res) => {
 };
 exports.withdrawApprove = async (req, res, next) => {
         try {
-                let adminResult = await User.findOne({ _id: req.user.id });
-                if (!adminResult) {
-                        return res.status(404).send({ status: 404, message: "user not found ", data: {} });
-                }
-                else {
-                        let data = await payoutTransaction.findOne({ _id: req.params._id, transactionType: "PAYOUT" });
-                        if (!data) {
-                                return res.status(404).send({ status: 404, message: "Data not found ", data: {} });
+
+                console.log(req.params.id)
+                let data = await payoutTransaction.findOne({ _id: req.params.id });
+                if (!data) {
+                        return res.status(404).send({ status: 404, message: "Data not found ", data: {} });
+                } else {
+                        if (data.status == "PAID") {
+                                return res.status(409).send({ status: 409, message: "Already Paid ", data: {} });
                         } else {
-                                if (data.status == "PAID") {
-                                        return res.status(409).send({ status: 409, message: "Already Paid ", data: {} });
-                                } else {
-                                        if (req.body.status == "PAID") {
-                                                if (req.file) {
-                                                        req.body.screenShot = req.file.path;
-                                                        let update = await payoutTransaction.findByIdAndUpdate({ _id: data._id }, { $set: req.body }, { new: true });
-                                                        if (update) {
-                                                                let findUser = await userModel.findOne({ _id: data.userId });
-                                                                let amount = findUser.walletBalance - update.amount
-                                                                await userModel.findByIdAndUpdate({ _id: data.userId }, { $set: { walletBalance: amount } }, { new: true });
-                                                                return res.status(200).send({ status: 200, message: "Send money to driver successfully ", data: update });
-                                                        }
+                                if (req.body.status == "PAID") {
+                                        if (req.file) {
+                                                req.body.screenShot = req.file.path;
+                                                let update = await payoutTransaction.findByIdAndUpdate({ _id: data._id }, { $set: req.body }, { new: true });
+                                                if (update) {
+                                                        let findUser = await userModel.findOne({ _id: data.userId });
+                                                        let amount = findUser.walletBalance - update.amount
+                                                        await userModel.findByIdAndUpdate({ _id: data.userId }, { $set: { walletBalance: amount } }, { new: true });
+                                                        return res.status(200).send({ status: 200, message: "Send money to driver successfully ", data: update });
                                                 }
-                                        } else if (req.body.status == "PENDING") {
-                                                if (req.file) {
-                                                        req.body.screenShot = req.file.path;
-                                                        let update = await payoutTransaction.findByIdAndUpdate({ _id: data._id }, { $set: req.body }, { new: true });
-                                                        if (update) {
-                                                                return res.status(200).send({ status: 200, message: "Send money to driver successfully ", data: update });
-                                                        }
-                                                } else {
-                                                        let update = await payoutTransaction.findByIdAndUpdate({ _id: data._id }, { $set: req.body }, { new: true });
-                                                        if (update) {
-                                                                return res.status(200).send({ status: 200, message: "Send money to driver successfully ", data: update });
-                                                        }
+                                        }
+                                } else if (req.body.status == "PENDING") {
+                                        if (req.file) {
+                                                req.body.screenShot = req.file.path;
+                                                let update = await payoutTransaction.findByIdAndUpdate({ _id: data._id }, { $set: req.body }, { new: true });
+                                                if (update) {
+                                                        return res.status(200).send({ status: 200, message: "Send money to driver successfully ", data: update });
                                                 }
                                         } else {
-                                                if (req.file) {
-                                                        req.body.screenShot = req.file.path;
-                                                        let update = await payoutTransaction.findByIdAndUpdate({ _id: data._id }, { $set: req.body }, { new: true });
-                                                        if (update) {
-                                                                return res.status(200).send({ status: 200, message: "Send money to driver successfully ", data: update });
-                                                        }
-                                                } else {
-                                                        let update = await payoutTransaction.findByIdAndUpdate({ _id: data._id }, { $set: req.body }, { new: true });
-                                                        if (update) {
-                                                                return res.status(200).send({ status: 200, message: "Send money to driver successfully ", data: update });
-                                                        }
+                                                let update = await payoutTransaction.findByIdAndUpdate({ _id: data._id }, { $set: req.body }, { new: true });
+                                                if (update) {
+                                                        return res.status(200).send({ status: 200, message: "Send money to driver successfully ", data: update });
+                                                }
+                                        }
+                                } else {
+                                        if (req.file) {
+                                                req.body.screenShot = req.file.path;
+                                                let update = await payoutTransaction.findByIdAndUpdate({ _id: data._id }, { $set: req.body }, { new: true });
+                                                if (update) {
+                                                        return res.status(200).send({ status: 200, message: "Send money to driver successfully ", data: update });
+                                                }
+                                        } else {
+                                                let update = await payoutTransaction.findByIdAndUpdate({ _id: data._id }, { $set: req.body }, { new: true });
+                                                if (update) {
+                                                        return res.status(200).send({ status: 200, message: "Send money to driver successfully ", data: update });
                                                 }
                                         }
                                 }
                         }
-
                 }
         } catch (error) {
-                return res.status(500).json({ status: 500, message: "Internal server error", data: error.message, });
+                return res.status(500).json({ status: 500, message: "Internal server error", data: error, });
         }
 };
 exports.allDriverDetail = async (req, res) => {
