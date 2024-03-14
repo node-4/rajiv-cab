@@ -2211,7 +2211,7 @@ exports.assignDriverOnSettleBooking = async (req, res) => {
                 if (booking) {
                         const user = await User.findOne({ _id: req.body.driverId, role: "driver" });
                         if (user) {
-                                const findBooking = await driverSettleBooking.findById({ driver: req.body.driverId });
+                                const findBooking = await driverSettleBooking.findOne({ driver: req.body.driverId });
                                 if (findBooking) {
                                         let bookingId = await reffralCode();
                                         await driverSettleBooking.findByIdAndUpdate({ _id: findBooking._id }, { $set: { settleBookingId: bookingId }, $push: { booking: req.params.bookingId } }, { new: true });
