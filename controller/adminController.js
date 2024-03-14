@@ -2359,7 +2359,8 @@ exports.getAllBookingTransaction = async (req, res) => {
 };
 exports.getAllWalletTransaction = async (req, res) => {
         try {
-                const acceptedOrders = await transactionModel.find({}).populate("user");
+                const acceptedOrders = await transactionModel.find({})
+                // .populate("user");
                 if (acceptedOrders.length == 0) {
                         return res.status(404).json({ status: 404, message: "Data not found", data: {} });
                 }
