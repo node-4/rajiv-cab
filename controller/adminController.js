@@ -2355,8 +2355,8 @@ exports.deleteCommission = async (req, res, next) => {
 };
 exports.getCommission = async (req, res) => {
         try {
-                const booking = await commission.find();
-                if (booking.length > 0) {
+                const booking = await commission.findOne();
+                if (booking) {
                         return res.status(200).json({ status: 200, message: 'Commission found successfully', data: booking });
                 } else {
                         return res.status(404).json({ status: 404, message: 'Commission not found.', data: booking });
