@@ -240,7 +240,7 @@ exports.driverImage = async (req, res) => {
 exports.allDriverDetail = async (req, res) => {
         try {
                 const { driverId } = req.params;
-                const driverDetails = await DriverDetail.findOne({ driver: driverId }).populate("driver city vehicle");
+                const driverDetails = await DriverDetail.findOne({ driver: driverId }).populate("driver city driverVehicleCategory");
                 console.log(driverDetails);
                 if (!driverDetails) {
                         return res.status(404).json({ status: 404, message: "Driver details not found" });
