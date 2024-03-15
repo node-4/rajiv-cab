@@ -14,12 +14,13 @@ const bcrypt = require("bcryptjs");
 exports.socialLogin = async (req, res) => {
         try {
                 const { email, mobileNumber, name, loginType } = req.body;
-                let user = await User.findOne({ $or: [{ email: email }, { mobileNumber: mobileNumber }], role: "driver", });
+                let user = await User.findOne({ $or: [{ email: email }], role: "driver", });
                 if (user) {
                         const token = jwt.sign({ id: user._id }, JWTkey);
                         return res.status(200).json({ status: 200, msg: "Login successful", userId: user._id, token: token, });
                 } else {
-                        const newUser = await User.create({ name, mobileNumber, email, role: "driver", });
+                        req.body.role = "driver";
+                        const newUser = await User.create(req.body);
                         if (newUser) {
                                 const token = jwt.sign({ id: newUser._id }, JWTkey);
                                 return res.status(201).json({ status: 201, msg: "User registered and logged in successfully", userId: newUser._id, token: token, });
@@ -457,6 +458,18 @@ exports.getMyEarning = async (req, res) => {
                 return res.status(500).json({ status: 500, message: "Internal server error", data: error.message, });
         }
 };
+exports.getMyEarningById = async (req, res) => {
+        try {
+                const acceptedOrders = await bookingPayment.findById({ _id: req.params.id }).populate("user");
+                if (!acceptedOrders) {
+                        return res.status(404).json({ status: 404, message: "Data not found", data: {} });
+                }
+                return res.status(200).json({ status: 200, message: "Data found", data: acceptedOrders });
+        } catch (error) {
+                console.error("Error:", error);
+                return res.status(500).json({ status: 500, message: "Internal server error", data: error.message, });
+        }
+};
 exports.sendOtpToUserBooking = async (req, res) => {
         try {
                 const booking = await Booking.findOne({ _id: req.params.bookingId, }).populate({ path: 'userId', select: 'mobileNumber' });
@@ -508,7 +521,7 @@ exports.getBookingByDate = async (req, res) => {
 };
 exports.myBooking = async (req, res) => {
         try {
-                const acceptedOrders = await Booking.find({ driver: req.user.id, status: "accepted", }).populate("userId").populate("driver"); // Assuming you want to populate user details
+                const acceptedOrders = await Booking.find({ driver: req.user.id, status: "accepted", }).populate("userId car driver")//Assuming you want to populate user details
                 if (acceptedOrders.length == 0) {
                         return res.status(404).json({ status: 404, message: "Data not found", data: {} });
                 }
@@ -520,7 +533,7 @@ exports.myBooking = async (req, res) => {
 };
 exports.getSettleBooking = async (req, res) => {
         try {
-                const booking = await driverSettleBooking.find({ driver: req.user.id }).populate({ path: 'booking', populate: { path: 'user driver' } });
+                const booking = await driverSettleBooking.find({ driver: req.user.id }).populate({ path: 'booking', populate: [{ path: 'user' }, { path: 'driver', populate: { path: 'driverVehicleCategory' } }] });
                 if (booking.length > 0) {
                         return res.status(200).json({ status: 200, message: 'Booking request found successfully', data: booking });
                 } else {
@@ -533,7 +546,7 @@ exports.getSettleBooking = async (req, res) => {
 };
 exports.getSettleBookingById = async (req, res) => {
         try {
-                const findPrivacy = await settleBooking.findById({ _id: req.params.id }).populate('user driver');
+                const findPrivacy = await settleBooking.findById({ _id: req.params.bookingId }).populate('user driver');
                 if (findPrivacy) {
                         return res.status(200).json({ status: 200, message: 'Data found for the specified type', data: findPrivacy });
                 } else {

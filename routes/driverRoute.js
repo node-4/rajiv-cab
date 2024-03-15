@@ -55,6 +55,7 @@ module.exports = (app) => {
   app.get('/api/v1/driver/getSettleBooking', authJwt.verifyToken, driverController.getSettleBooking);
   app.get('/api/v1/driver/getSettleBookingById/:bookingId', driverController.getSettleBookingById);
   app.post("/api/v1/driver/bookingPayments/:bookingId", driverController.bookingPayment);
+  app.get("/api/v1/driver/getMyEarningById/:id", driverController.getMyEarningById);
   app.get("/api/v1/driver/getMyEarning", authJwt.verifyToken, driverController.getMyEarning);
   app.post("/api/v1/driver/sendOtpToUserSettleBooking/:bookingId", authJwt.verifyToken, driverController.sendOtpToUserSettleBooking);
   app.post("/api/v1/driver/startSettle/:bookingId", authJwt.verifyToken, driverController.startSettleBooking);
