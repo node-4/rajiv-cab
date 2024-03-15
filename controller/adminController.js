@@ -2277,7 +2277,7 @@ exports.getSettleBookingById = async (req, res) => {
 };
 exports.addCommission = async (req, res, next) => {
         try {
-                let findVehicalType = await commission.findOne({ disCountType: req.body.disCountType });
+                let findVehicalType = await commission.findOne({});
                 if (findVehicalType) {
                         let adminCommission, driverCommission, disCountType;
                         disCountType = req.body.disCountType;
