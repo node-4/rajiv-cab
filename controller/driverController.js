@@ -533,7 +533,7 @@ exports.myBooking = async (req, res) => {
 };
 exports.getSettleBooking = async (req, res) => {
         try {
-                const booking = await driverSettleBooking.find({ driver: req.user.id }).populate({ path: 'booking', populate: [{ path: 'user' }, { path: 'driver', populate: { path: 'driverVehicleCategory' } }] });
+                const booking = await driverSettleBooking.find({ driver: req.user.id }).populate({ path: 'booking', populate: [{ path: 'user' }, { path: 'driver', populate: { path: 'driverVehicleCategory', populate: { path: 'vehicle' } } }] });
                 if (booking.length > 0) {
                         return res.status(200).json({ status: 200, message: 'Booking request found successfully', data: booking });
                 } else {
@@ -546,7 +546,7 @@ exports.getSettleBooking = async (req, res) => {
 };
 exports.getSettleBookingById = async (req, res) => {
         try {
-                const findPrivacy = await driverSettleBooking.findById({ _id: req.params.bookingId }).populate({ path: 'booking', populate: [{ path: 'user' }, { path: 'driver', populate: { path: 'driverVehicleCategory' } }] });
+                const findPrivacy = await driverSettleBooking.findById({ _id: req.params.bookingId }).populate({ path: 'booking', populate: [{ path: 'user' }, { path: 'driver', populate: { path: 'driverVehicleCategory' }, populate: { path: 'vehicle' } }] });
                 if (findPrivacy) {
                         return res.status(200).json({ status: 200, message: 'Data found for the specified type', data: findPrivacy });
                 } else {
