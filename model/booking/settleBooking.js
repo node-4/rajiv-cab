@@ -55,6 +55,12 @@ const userLocationSchema = new mongoose.Schema({
   pricing: {
     type: Number,
   },
+  startDate: {
+    type: Date,
+  },
+  endDate: {
+    type: Date,
+  },
   subscriptionExpiration: {
     type: Date,
   },

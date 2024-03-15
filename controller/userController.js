@@ -113,7 +113,7 @@ exports.updateProfile = async (req, res) => {
 };
 exports.createSettleBooking = async (req, res) => {
     try {
-        const { current, drop, pickUpTime, dropTime, km, city, vehicle, day } = req.body;
+        const { current, drop, pickUpTime, dropTime, km, city, vehicle, startDate, endDate } = req.body;
         const user = await User.findById(req.user.id);
         if (!user) {
             return res.status(404).send({ status: 404, message: "user not found ", data: {} });
@@ -122,6 +122,12 @@ exports.createSettleBooking = async (req, res) => {
         if (!findPrivacy2) {
             return res.status(404).json({ status: 404, message: 'Category  not found for the specified type', data: {} });
         }
+        const startDate1 = new Date(startDate);
+        const endDate1 = new Date(endDate);
+        const differenceInMilliseconds = endDate1.getTime() - startDate1.getTime();
+        const millisecondsInADay = 1000 * 60 * 60 * 24;
+        const differenceInDays = Math.floor(differenceInMilliseconds / millisecondsInADay);
+        let day = differenceInDays + 1;
         let pricingDetails = await basePricing.findOne({ vehicle: vehicle, city: findPrivacy2._id, });
         let pricingDetails1 = await dailyPricing.findOne({ vehicle: vehicle, city: findPrivacy2._id, toKm: { $gte: km }, fromKm: { $lte: km } });
         let pricing = ((pricingDetails1.price * km) + pricingDetails.basePrice + pricingDetails.taxRate + pricingDetails.gstRate + pricingDetails.serviceCharge + pricingDetails.nightCharges + pricingDetails.waitingCharge + pricingDetails.trafficCharge) * day;
@@ -135,7 +141,9 @@ exports.createSettleBooking = async (req, res) => {
             drop: drop,
             dropTime: dropTime,
             km: km,
-            pricing: pricing
+            pricing: pricing,
+            startDate,
+            endDate
         }
         const booking = await settleBooking.create(obj);
         if (booking) {
@@ -216,11 +224,19 @@ exports.getBooking = async (req, res) => {
         if (!user) {
             return res.status(404).send({ status: 404, message: "user not found ", data: {} });
         }
-        const bookingData = await Booking.find({ userId: user._id }).populate("car");
-        if (bookingData.length == 0) {
-            return res.status(404).json({ status: 404, message: 'Bokking data not found', data: {} });
+        if (req.query.status != (null || undefined)) {
+            const bookingData = await Booking.find({ userId: user._id, status: req.query.status }).populate("car driver genderCategory vehicleAmbulance superCar serviceCategory").sort({ createdAt: -1 });
+            if (bookingData.length == 0) {
+                return res.status(404).json({ status: 404, message: 'Bokking data not found', data: {} });
+            }
+            return res.status(200).json({ status: 200, message: 'Bokking data found', data: bookingData });
+        } else {
+            const bookingData = await Booking.find({ userId: user._id }).populate("car driver genderCategory vehicleAmbulance superCar serviceCategory").sort({ createdAt: -1 });
+            if (bookingData.length == 0) {
+                return res.status(404).json({ status: 404, message: 'Bokking data not found', data: {} });
+            }
+            return res.status(200).json({ status: 200, message: 'Bokking data found', data: bookingData });
         }
-        return res.status(200).json({ status: 200, message: 'Bokking data found', data: bookingData });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ status: 500, message: 'Server error', data: error });
