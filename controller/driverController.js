@@ -546,7 +546,7 @@ exports.getSettleBooking = async (req, res) => {
 };
 exports.getSettleBookingById = async (req, res) => {
         try {
-                const findPrivacy = await settleBooking.findById({ _id: req.params.bookingId }).populate('user driver');
+                const findPrivacy = await driverSettleBooking.findById({ _id: req.params.bookingId }).populate({ path: 'booking', populate: [{ path: 'user' }, { path: 'driver', populate: { path: 'driverVehicleCategory' } }] });
                 if (findPrivacy) {
                         return res.status(200).json({ status: 200, message: 'Data found for the specified type', data: findPrivacy });
                 } else {
