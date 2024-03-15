@@ -80,7 +80,7 @@ exports.loginUser = async (req, res) => {
 };
 exports.getUserDetails = async (req, res) => {
     try {
-        const user = await User.findById(req.user.id).populate("category");
+        const user = await User.findById(req.user.id);
         if (!user) {
             return res.status(404).send({ status: 404, message: "user not found ", data: {} });
         } else {
