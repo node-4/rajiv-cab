@@ -100,10 +100,14 @@ module.exports = (app) => {
   app.put('/api/v1/City/:id', adminController.updateCity);
   app.delete('/api/v1/City/:id', adminController.DeleteCity);
   app.get('/api/v1/City/', adminController.getCity);
-  app.post("/api/v1/notify", adminController.AddNotification);
-  app.get("/api/v1/notify", adminController.GetAllNotification);
+
+  app.post("/api/v1/notify/add", authJwt.verifyToken, adminController.AddNotification);
+  app.get("/api/v1/notify/GetAllNotification", authJwt.verifyToken, adminController.GetAllNotification);
+  app.get("/api/v1/notify/listmyNotification", authJwt.verifyToken, adminController.listmyNotification);
   app.get("/api/v1/notify/get/:id", adminController.GetBYNotifyID);
   app.delete("/api/v1/notify/delete/:id", adminController.deleteNotification);
+
+
   app.post('/api/v1/cancel', adminController.addCancel);
   app.get('/api/v1/cancel', adminController.getCancel);
   app.put('/api/v1/cancel/:id', adminController.updateCancel);

@@ -252,7 +252,7 @@ exports.allUser = async (req, res) => {
 };
 exports.getUserById = async (req, res) => {
         try {
-                const findPrivacy = await User.findById({ _id: req.params.id });
+                const findPrivacy = await User.findById({ _id: req.params.id }).populate('driverVehicleCategory driverDocument');
                 if (findPrivacy) {
                         return res.status(200).json({ status: 200, message: 'Data found.', data: findPrivacy });
                 } else {
@@ -1745,46 +1745,284 @@ exports.getHourlyPricingByDistance = async (req, res) => {
 };
 exports.AddNotification = async (req, res) => {
         try {
-                let findnotify = await notify.findOne({ message: req.body.message });
-                console.log(req.body.name)
-                if (findnotify) {
-                        res.status(409).json({ message: "notify already exit.", status: 404, data: {} });
+                const admin = await User.findById(req.user.id);
+                if (!admin) {
+                        return res.status(404).json({ error: "User not found" });
                 } else {
-                        let fileUrl;
-                        if (req.file) {
-                                fileUrl = req.file.path;
-                        } else {
-                                fileUrl = null;
+                        if (req.body.sendTo == "USER") {
+                                if (req.body.total == "ALL") {
+                                        let userData = await User.find({ role: 'users' });
+                                        if (!userData) {
+                                                return res.status(404).send({ status: 404, message: "user not found ! not registered" });
+                                        } else {
+                                                let d = new Date(), date = d.getDate(); let month = d.getMonth() + 1; let year = d.getFullYear(), hr = d.getHours(), min = d.getMinutes(), sec = d.getSeconds();
+                                                let fullDate = await datetimeCalulate(date, month, year, hr, min, sec)
+                                                for (let i = 0; i < userData.length; i++) {
+                                                        let obj = {
+                                                                title: req.body.subject,
+                                                                body: req.body.body,
+                                                                userId: userData[i]._id,
+                                                                date: fullDate,
+                                                                sendBy: "ADMIN",
+                                                                sendTo: "USER",
+                                                        }
+                                                        var notif = await notify.create(obj);
+                                                }
+                                                let obj = {
+                                                        title: req.body.subject,
+                                                        body: req.body.body,
+                                                        adminId: admin._id,
+                                                        date: fullDate,
+                                                        sendBy: "ADMIN",
+                                                        sendTo: "USER",
+                                                }
+                                                var notif = await notify.create(obj);
+                                                if (notif) {
+                                                        response(res, SuccessCode.SUCCESS, notif, SuccessMessage.DATA_FOUND);
+                                                }
+                                        }
+                                }
+                                if (req.body.total == "SINGLE") {
+                                        let userData = await User.findOne({ _id: req.body.userId });
+                                        if (!userData) {
+                                                return res.status(404).send({ status: 404, message: "user not found ! not registered" });
+                                        } else {
+                                                let d = new Date(), date = d.getDate(); let month = d.getMonth() + 1; let year = d.getFullYear(), hr = d.getHours(), min = d.getMinutes(), sec = d.getSeconds();
+                                                let fullDate = await datetimeCalulate(date, month, year, hr, min, sec)
+                                                let obj = {
+                                                        title: req.body.subject,
+                                                        body: req.body.body,
+                                                        userId: userData._id,
+                                                        date: fullDate,
+                                                        sendBy: "ADMIN",
+                                                        sendTo: "USER",
+                                                }
+                                                var notif = await notify.create(obj);
+                                                let obj1 = {
+                                                        title: req.body.subject,
+                                                        body: req.body.body,
+                                                        adminId: admin._id,
+                                                        userId: userData._id,
+                                                        date: fullDate,
+                                                        sendBy: "ADMIN",
+                                                        sendTo: "USER",
+                                                }
+                                                var notif = await notify.create(obj1);
+                                                if (notif) {
+                                                        response(res, SuccessCode.SUCCESS, notif, SuccessMessage.DATA_FOUND);
+                                                }
+                                        }
+                                }
                         }
-                        const data = { message: req.body.message, desc: req.body.desc, image: fileUrl };
-                        const notifys = await notify.create(data);
-                        res.status(200).json({ message: "notify add successfully.", status: 200, data: notifys });
+                        if (req.body.sendTo == "VENDOR") {
+                                if (req.body.total == "ALL") {
+                                        let userData = await User.find({ role: 'vendor' });
+                                        if (!userData) {
+                                                return res.status(404).send({ status: 404, message: "user not found ! not registered" });
+                                        } else {
+                                                let d = new Date(), date = d.getDate(); let month = d.getMonth() + 1; let year = d.getFullYear(), hr = d.getHours(), min = d.getMinutes(), sec = d.getSeconds();
+                                                let fullDate = await datetimeCalulate(date, month, year, hr, min, sec)
+                                                for (let i = 0; i < userData.length; i++) {
+                                                        let obj = {
+                                                                title: req.body.subject,
+                                                                body: req.body.body,
+                                                                userId: userData[i]._id,
+                                                                date: fullDate,
+                                                                sendBy: "ADMIN",
+                                                                sendTo: "VENDOR",
+                                                        }
+                                                        var notif = await notify.create(obj);
+                                                }
+                                                let obj = {
+                                                        title: req.body.subject,
+                                                        body: req.body.body,
+                                                        adminId: admin._id,
+                                                        date: fullDate,
+                                                        sendBy: "ADMIN",
+                                                        sendTo: "VENDOR",
+                                                }
+                                                var notif = await notify.create(obj);
+                                                if (notif) {
+                                                        response(res, SuccessCode.SUCCESS, notif, SuccessMessage.DATA_FOUND);
+                                                }
+                                        }
+                                }
+                                if (req.body.total == "SINGLE") {
+                                        let userData = await User.findOne({ _id: req.body.userId, role: 'vendor' });
+                                        if (!userData) {
+                                                return res.status(404).send({ status: 404, message: "user not found ! not registered" });
+                                        } else {
+                                                let d = new Date(), date = d.getDate(); let month = d.getMonth() + 1; let year = d.getFullYear(), hr = d.getHours(), min = d.getMinutes(), sec = d.getSeconds();
+                                                let fullDate = await datetimeCalulate(date, month, year, hr, min, sec)
+                                                let obj = {
+                                                        title: req.body.subject,
+                                                        body: req.body.body,
+                                                        userId: userData._id,
+                                                        date: fullDate,
+                                                        sendBy: "ADMIN",
+                                                        sendTo: "VENDOR",
+                                                }
+                                                var notif = await notify.create(obj);
+                                                let obj1 = {
+                                                        title: req.body.subject,
+                                                        body: req.body.body,
+                                                        adminId: admin._id,
+                                                        userId: userData._id,
+                                                        date: fullDate,
+                                                        sendBy: "ADMIN",
+                                                        sendTo: "VENDOR",
+                                                }
+                                                var notif = await notify.create(obj1);
+                                                if (notif) {
+                                                        response(res, SuccessCode.SUCCESS, notif, SuccessMessage.DATA_FOUND);
+                                                }
+                                        }
+                                }
+                        }
+                        if (req.body.sendTo == "DRIVER") {
+                                if (req.body.total == "ALL") {
+                                        let userData = await User.find({ role: 'driver' });
+                                        if (!userData) {
+                                                return res.status(404).send({ status: 404, message: "user not found ! not registered" });
+                                        } else {
+                                                let d = new Date(), date = d.getDate(); let month = d.getMonth() + 1; let year = d.getFullYear(), hr = d.getHours(), min = d.getMinutes(), sec = d.getSeconds();
+                                                let fullDate = await datetimeCalulate(date, month, year, hr, min, sec)
+                                                for (let i = 0; i < userData.length; i++) {
+                                                        let obj = {
+                                                                title: req.body.subject,
+                                                                body: req.body.body,
+                                                                userId: userData[i]._id,
+                                                                date: fullDate,
+                                                                sendBy: "ADMIN",
+                                                                sendTo: "DRIVER",
+                                                        }
+                                                        var notif = await notify.create(obj);
+                                                }
+                                                let obj = {
+                                                        title: req.body.subject,
+                                                        body: req.body.body,
+                                                        adminId: admin._id,
+                                                        date: fullDate,
+                                                        sendBy: "ADMIN",
+                                                        sendTo: "DRIVER",
+                                                }
+                                                var notif = await notify.create(obj);
+                                                if (notif) {
+                                                        response(res, SuccessCode.SUCCESS, notif, SuccessMessage.DATA_FOUND);
+                                                }
+                                        }
+                                }
+                                if (req.body.total == "SINGLE") {
+                                        let userData = await User.findOne({ _id: req.body.userId });
+                                        if (!userData) {
+                                                return res.status(404).send({ status: 404, message: "user not found ! not registered" });
+                                        } else {
+                                                let d = new Date(), date = d.getDate(); let month = d.getMonth() + 1; let year = d.getFullYear(), hr = d.getHours(), min = d.getMinutes(), sec = d.getSeconds();
+                                                let fullDate = await datetimeCalulate(date, month, year, hr, min, sec)
+                                                let obj = {
+                                                        title: req.body.subject,
+                                                        body: req.body.body,
+                                                        userId: userData._id,
+                                                        date: fullDate,
+                                                        sendBy: "ADMIN",
+                                                        sendTo: "DRIVER",
+                                                }
+                                                var notif = await notify.create(obj);
+                                                let obj1 = {
+                                                        title: req.body.subject,
+                                                        body: req.body.body,
+                                                        adminId: admin._id,
+                                                        userId: userData._id,
+                                                        date: fullDate,
+                                                        sendBy: "ADMIN",
+                                                        sendTo: "DRIVER",
+                                                }
+                                                var notif = await notify.create(obj1);
+                                                if (notif) {
+                                                        response(res, SuccessCode.SUCCESS, notif, SuccessMessage.DATA_FOUND);
+                                                }
+                                        }
+                                }
+                        }
                 }
         } catch (error) {
-                res.status(500).json({ status: 500, message: "internal server error ", data: error.message, });
+                console.log(error)
+                return res.status(500).json({ status: 500, message: "internal server error ", data: error.message, });
         }
 };
+const datetimeCalulate = async (date, month, year, hr, min, sec) => {
+        let date1, hr1, min1, sec1;
+        if (date < 10) {
+                date1 = '' + 0 + date;
+        }
+        else {
+                date1 = date
+        }
+        if (hr < 10) {
+                hr1 = '' + 0 + hr;
+        }
+        else {
+                hr1 = hr
+        }
+        if (min < 10) {
+                min1 = '' + 0 + min;
+        }
+        else {
+                min1 = min
+        }
+        if (sec < 10) {
+                sec1 = '' + 0 + sec;
+        }
+        else {
+                sec1 = sec
+        }
+        let fullDate = `${date1}/${month}/${year} ${hr1}:${min1}:${sec1}`
+        return fullDate
+}
 exports.GetAllNotification = async (req, res) => {
         try {
-                const data = await notify.find();
-                res.status(200).json({
-                        message: data,
-                        total: data.length
-                })
-        } catch (err) {
-                res.status(400).json({
-                        message: err.message
-                })
+                let admin = await User.findOne({ _id: req.user.id });
+                if (!admin) {
+                        return res.status(404).send({ status: 404, message: "user not found ! not registered" });
+                } else {
+                        var notif = await notify.find({ adminId: admin._id, sendBy: "ADMIN", }).sort({ "createdAt": -1 }).populate('userId')
+                        if (notif.length == 0) {
+                                response(res, ErrorCode.NOT_FOUND, {}, ErrorMessage.NOT_FOUND);
+                        } else {
+                                response(res, SuccessCode.SUCCESS, notif, SuccessMessage.DATA_FOUND);
+                        }
+                }
+        } catch (error) {
+                console.log(error)
+                return res.status(500).json({ status: 500, message: "internal server error ", data: error.message, });
         }
-}
+};
+exports.listmyNotification = async (req, res) => {
+        try {
+                let admin = await User.findOne({ _id: req.user.id });
+                if (!admin) {
+                        return res.status(404).send({ status: 404, message: "user not found ! not registered" });
+                } else {
+                        var notif = await notify.find({ userId: admin._id }).sort({ "createdAt": -1 }).populate('userId')
+                        if (notif.length == 0) {
+                                response(res, ErrorCode.NOT_FOUND, {}, ErrorMessage.NOT_FOUND);
+                        } else {
+                                response(res, SuccessCode.SUCCESS, notif, SuccessMessage.DATA_FOUND);
+                        }
+                }
+        } catch (error) {
+                console.log(error)
+                return res.status(500).json({ status: 500, message: "internal server error ", data: error.message, });
+        }
+};
 exports.GetBYNotifyID = async (req, res) => {
         try {
                 const data = await notify.findById({ _id: req.params.id })
-                res.status(200).json({
+                return res.status(200).json({
                         message: data
                 })
         } catch (err) {
-                res.status(400).json({
+                return res.status(400).json({
                         message: err.message
                 })
         }
@@ -1792,11 +2030,11 @@ exports.GetBYNotifyID = async (req, res) => {
 exports.deleteNotification = async (req, res) => {
         try {
                 await notify.findByIdAndDelete({ _id: req.params.id });
-                res.status(200).json({
+                return res.status(200).json({
                         message: "Notification Deleted "
                 })
         } catch (err) {
-                res.status(400).json({
+                return res.status(400).json({
                         message: err.message
                 })
         }
@@ -1804,40 +2042,40 @@ exports.deleteNotification = async (req, res) => {
 exports.addCancel = async (req, res) => {
         try {
                 const cancelData = await cancel.create({ cancel: req.body.cancel });
-                res.status(200).json({ data: cancelData, message: "  cancel Added ", details: cancelData })
+                return res.status(200).json({ data: cancelData, message: "  cancel Added ", details: cancelData })
         }
         catch (err) {
                 console.log(err);
-                res.status(400).send({ message: err.message })
+                return res.status(400).send({ message: err.message })
         }
 }
 exports.getCancel = async (req, res) => {
         try {
                 const data = await cancel.find();
                 console.log(data);
-                res.status(200).json({ cancel: data })
+                return res.status(200).json({ cancel: data })
         } catch (err) {
-                res.status(400).send({ mesage: err.mesage });
+                return res.status(400).send({ mesage: err.mesage });
         }
 }
 exports.updateCancel = async (req, res) => {
         try {
                 const Updatedcancel = await cancel.findOneAndUpdate({ _id: req.params.id }, { cancel: req.body.cancel }).exec();
                 console.log(Updatedcancel);
-                res.status(200).json({ message: "cancel Update" })
+                return res.status(200).json({ message: "cancel Update" })
         } catch (err) {
                 console.log(err)
-                res.status(401).json({ mesage: err.mesage })
+                return res.status(401).json({ mesage: err.mesage })
         }
 }
 exports.DeleteCancel = async (req, res) => {
         try {
                 const id = req.params.id;
                 await cancel.deleteOne({ _id: id });
-                res.status(200).send({ message: "cancel deleted " })
+                return res.status(200).send({ message: "cancel deleted " })
         } catch (err) {
                 console.log(err);
-                res.status(400).send({ message: err.message })
+                return res.status(400).send({ message: err.message })
         }
 }
 exports.addOutStationPricing = async (req, res) => {
@@ -2518,9 +2756,9 @@ exports.withdrawApprove = async (req, res, next) => {
                                                 req.body.screenShot = req.file.path;
                                                 let update = await payoutTransaction.findByIdAndUpdate({ _id: data._id }, { $set: req.body }, { new: true });
                                                 if (update) {
-                                                        let findUser = await userModel.findOne({ _id: data.userId });
+                                                        let findUser = await User.findOne({ _id: data.userId });
                                                         let amount = findUser.walletBalance - update.amount
-                                                        await userModel.findByIdAndUpdate({ _id: data.userId }, { $set: { walletBalance: amount } }, { new: true });
+                                                        await User.findByIdAndUpdate({ _id: data.userId }, { $set: { walletBalance: amount } }, { new: true });
                                                         return res.status(200).send({ status: 200, message: "Send money to driver successfully ", data: update });
                                                 }
                                         }
