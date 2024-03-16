@@ -117,7 +117,7 @@ exports.resendOTP = async (req, res) => {
 };
 exports.getDriverDetails = async (req, res) => {
         try {
-                const user = await User.findById(req.user.id);
+                const user = await User.findById(req.user.id).populate({ path: 'driverVehicleCategory', populate: { path: 'vehicle' } });
                 if (!user) {
                         return res.status(404).send({ status: 404, message: "user not found ", data: {} });
                 } else {
@@ -643,3 +643,11 @@ exports.stopSettleBooking = async (req, res) => {
                 return res.status(500).json({ status: 500, message: "Internal server error", data: error.message, });
         }
 };
+const reffralCode = async () => {
+        var digits = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        let OTP = '';
+        for (let i = 0; i < 9; i++) {
+                OTP += digits[Math.floor(Math.random() * 36)];
+        }
+        return OTP;
+}
