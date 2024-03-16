@@ -533,9 +533,18 @@ exports.myBooking = async (req, res) => {
 };
 exports.getSettleBooking = async (req, res) => {
         try {
-                const booking = await driverSettleBooking.find({ driver: req.user.id }).populate({ path: 'booking', populate: [{ path: 'user' }, { path: 'driver', populate: { path: 'driverVehicleCategory', populate: { path: 'vehicle' } } }] });
+                const booking = await driverSettleBooking.find({ driver: req.user.id }).populate({ path: 'driver', populate: { path: 'driverVehicleCategory', populate: { path: 'vehicle' } } });
                 if (booking.length > 0) {
-                        return res.status(200).json({ status: 200, message: 'Booking request found successfully', data: booking });
+                        let Data = []
+                        for (let i = 0; i < booking.length; i++) {
+                                const bookingData = await settleBooking.find({ settleBookingId: booking[i].settleBookingId }).populate([{ path: 'user' }]).sort({ pickFirst: 1 });
+                                let obj = {
+                                        data: booking[i],
+                                        bookingData: bookingData
+                                }
+                                Data.push(obj)
+                        }
+                        return res.status(200).json({ status: 200, message: 'Booking request found successfully', data: Data });
                 } else {
                         return res.status(404).json({ status: 404, message: 'Booking request not found.', data: booking });
                 }
@@ -550,14 +559,11 @@ exports.getSettleBookingById = async (req, res) => {
                         path: 'booking', populate: [{ path: 'user' },
                         {
                                 path: 'driver',
-                                // populate: { path: 'driverVehicleCategory' },
-                                //   populate: { path: 'vehicle' }
                         }]
                 },
                 {
                         path: 'driver',
                         populate: { path: 'driverVehicleCategory', populate: { path: 'vehicle' } },
-
                 }
                 ]);
                 if (findPrivacy) {

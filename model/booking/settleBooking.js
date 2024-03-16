@@ -101,6 +101,9 @@ const userLocationSchema = new mongoose.Schema({
     enum: ["pending", "Accept"],
     default: 'pending',
   },
+  pickFirst: {
+    type: Number,
+  },
 }, { timestamps: true });
 userLocationSchema.index({ location: '2dsphere' });
 module.exports = mongoose.model('settleBooking', userLocationSchema);
