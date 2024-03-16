@@ -3,7 +3,6 @@ const randomatic = require("randomatic");
 const jwt = require("jsonwebtoken");
 const genderCategory = require("../model/Category/genderCategory");
 const vehicleAmbulance = require('../model/Vehical/vehicleAmbulance');
-const DriverDetail = require("../model/Auth/driverDetail");
 const Booking = require("../model/booking/booking");
 const Pricing = require("../model/pricing/dailyPricing");
 const vehicle = require('../model/Vehical/vehicleModel')
@@ -18,6 +17,7 @@ const payoutTransaction = require("../model/Auth/payoutTransaction");
 const sosRequest = require("../model/SOS/sosRequest");
 const outStationPricing = require('../model/pricing/outStationPricing');
 const ifsc = require('ifsc');
+const DriverDetail = require("../model/Auth/driverDetail");
 exports.registerUser = async (req, res) => {
     try {
         const { name, email, gender, mobileNumber, birthday, category } = req.body;

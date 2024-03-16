@@ -1778,7 +1778,7 @@ exports.AddNotification = async (req, res) => {
                                                 }
                                                 var notif = await notify.create(obj);
                                                 if (notif) {
-                                                        response(res, SuccessCode.SUCCESS, notif, SuccessMessage.DATA_FOUND);
+                                                        return res.status(200).json({ success: true, message: 'Notification send successfully', data: notif });
                                                 }
                                         }
                                 }
@@ -1809,7 +1809,8 @@ exports.AddNotification = async (req, res) => {
                                                 }
                                                 var notif = await notify.create(obj1);
                                                 if (notif) {
-                                                        response(res, SuccessCode.SUCCESS, notif, SuccessMessage.DATA_FOUND);
+                                                        return res.status(200).json({ success: true, message: 'Notification send successfully', data: notif });
+
                                                 }
                                         }
                                 }
@@ -1843,7 +1844,8 @@ exports.AddNotification = async (req, res) => {
                                                 }
                                                 var notif = await notify.create(obj);
                                                 if (notif) {
-                                                        response(res, SuccessCode.SUCCESS, notif, SuccessMessage.DATA_FOUND);
+                                                        return res.status(200).json({ success: true, message: 'Notification send successfully', data: notif });
+
                                                 }
                                         }
                                 }
@@ -1874,7 +1876,8 @@ exports.AddNotification = async (req, res) => {
                                                 }
                                                 var notif = await notify.create(obj1);
                                                 if (notif) {
-                                                        response(res, SuccessCode.SUCCESS, notif, SuccessMessage.DATA_FOUND);
+                                                        return res.status(200).json({ success: true, message: 'Notification send successfully', data: notif });
+
                                                 }
                                         }
                                 }
@@ -1908,7 +1911,8 @@ exports.AddNotification = async (req, res) => {
                                                 }
                                                 var notif = await notify.create(obj);
                                                 if (notif) {
-                                                        response(res, SuccessCode.SUCCESS, notif, SuccessMessage.DATA_FOUND);
+                                                        return res.status(200).json({ success: true, message: 'Notification send successfully', data: notif });
+
                                                 }
                                         }
                                 }
@@ -1939,7 +1943,8 @@ exports.AddNotification = async (req, res) => {
                                                 }
                                                 var notif = await notify.create(obj1);
                                                 if (notif) {
-                                                        response(res, SuccessCode.SUCCESS, notif, SuccessMessage.DATA_FOUND);
+                                                        return res.status(200).json({ success: true, message: 'Notification send successfully', data: notif });
+
                                                 }
                                         }
                                 }
@@ -1987,9 +1992,9 @@ exports.GetAllNotification = async (req, res) => {
                 } else {
                         var notif = await notify.find({ adminId: admin._id, sendBy: "ADMIN", }).sort({ "createdAt": -1 }).populate('userId')
                         if (notif.length == 0) {
-                                response(res, ErrorCode.NOT_FOUND, {}, ErrorMessage.NOT_FOUND);
+                                return res.status(404).json({ success: false, message: 'Notification  not  found successfully', data: {} });
                         } else {
-                                response(res, SuccessCode.SUCCESS, notif, SuccessMessage.DATA_FOUND);
+                                return res.status(200).json({ success: true, message: 'Notification found successfully', data: notif });
                         }
                 }
         } catch (error) {
@@ -2003,11 +2008,12 @@ exports.listmyNotification = async (req, res) => {
                 if (!admin) {
                         return res.status(404).send({ status: 404, message: "user not found ! not registered" });
                 } else {
-                        var notif = await notify.find({ userId: admin._id }).sort({ "createdAt": -1 }).populate('userId')
+                        console.log(req.user.id)
+                        var notif = await notify.find({ userId: admin._id, adminId: { $exists: false } }).sort({ "createdAt": -1 }).populate('userId');
                         if (notif.length == 0) {
-                                response(res, ErrorCode.NOT_FOUND, {}, ErrorMessage.NOT_FOUND);
+                                return res.status(404).json({ success: false, message: 'Notification  not  found successfully', data: {} });
                         } else {
-                                response(res, SuccessCode.SUCCESS, notif, SuccessMessage.DATA_FOUND);
+                                return res.status(200).json({ success: true, message: 'Notification found successfully', data: notif });
                         }
                 }
         } catch (error) {
