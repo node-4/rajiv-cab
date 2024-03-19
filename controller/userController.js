@@ -560,6 +560,7 @@ exports.addMoney = async (req, res) => {
                 amount: parseFloat(balance),
                 paymentMode: paymentMode,
                 type: "Credit",
+                role: findUser.role
             }
             const newUser = await transactionModel.create(obj);
             return res.status(200).json({ data: findUser, success: true, message: `Added to wallet`, status: 200, });
@@ -645,6 +646,7 @@ exports.withdrawPayOutRequest = async (req, res, next) => {
                 if (transactionFind) {
                     return res.status(409).send({ status: 409, message: "Already exit ", data: {} });
                 } else {
+                    req.body.id = await reffralCode();
                     if (req.body.paymentMethod == "BANK") {
                         let data1 = req.body.ifsc
                         let data2 = data1.toUpperCase()
@@ -705,6 +707,7 @@ exports.withdrawRefundRequest = async (req, res, next) => {
                 if (transactionFind) {
                     return res.status(409).send({ status: 409, message: "Already exit ", data: {} });
                 } else {
+                    req.body.id = await reffralCode();
                     if (req.body.paymentMethod == "BANK") {
                         let data1 = req.body.ifsc
                         let data2 = data1.toUpperCase()
@@ -712,7 +715,7 @@ exports.withdrawRefundRequest = async (req, res, next) => {
                         req.body.userId = user._id;
                         req.body.bank = data.BANK;
                         req.body.ifsc = data.IFSC;
-                        req.body.transactionType = "REFUND"
+                        req.body.transactionType = "REFUND";
                         let transaction1 = await payoutTransaction(req.body).save();
                         if (transaction1) {
                             return res.status(200).json({ status: 200, message: "Your payment request sent successfully", data: transaction1, });

@@ -20,6 +20,10 @@ const transactionSchema = mongoose.Schema({
     type: {
         type: String,
     },
+    role: {
+        type: String,
+        enum: ["user", "driver"],
+    },
 });
 const transaction = mongoose.model("transaction", transactionSchema);
 module.exports = transaction;

@@ -191,7 +191,7 @@ exports.updateCategory = async (req, res) => {
                         isDiscount: req.body.isDiscount || data.isDiscount,
                         discountPer: req.body.discountPer || data.discountPer,
                 }
-                const UpdatedCategory = await category.findOneAndUpdate({ _id: data._id }, { $set: obj }).exec();
+                const UpdatedCategory = await category.findOneAndUpdate({ _id: data._id }, { $set: obj }, { new: true })
                 return res.status(200).json({ status: 200, message: "category Update ", category: UpdatedCategory })
         } catch (err) {
                 console.log(err)
@@ -226,7 +226,7 @@ exports.allVendor = async (req, res) => {
 };
 exports.allDriver = async (req, res) => {
         try {
-                const vendors = await User.find({ role: "driver" });
+                const vendors = await User.find({ role: "driver" }).populate('driverVehicleCategory driverDocument');;
                 if (vendors.length == 0) {
                         return res.status(404).json({ status: 404, message: "driver not found ", category: {} })
                 } else {
@@ -395,11 +395,11 @@ exports.removeBanner = async (req, res) => {
 };
 exports.addTerms = async (req, res) => {
         try {
-                const data = await privacy.findOne({ terms: req.body.terms, type: req.body.type });
+                const data = await privacy.findOne({ type: req.body.type, typeOf: "terms" });
                 if (data) {
                         return res.status(200).json({ status: 200, message: 'Data already exit.', data: data });
                 }
-                const termsData = await privacy.create({ terms: req.body.terms, type: req.body.type });
+                const termsData = await privacy.create({ terms: req.body.terms, type: req.body.type, typeOf: "terms" });
                 return res.status(200).json({ data: termsData, message: "Terms Added ", details: termsData })
         }
         catch (err) {
@@ -409,7 +409,7 @@ exports.addTerms = async (req, res) => {
 }
 exports.getTerms = async (req, res) => {
         try {
-                const data = await privacy.find().select('-privacy');
+                const data = await privacy.find({ typeOf: "terms" }).select('-privacy');
                 if (data.length > 0) {
                         return res.status(200).json({ status: 200, message: 'Data found', data: data });
                 } else {
@@ -421,7 +421,7 @@ exports.getTerms = async (req, res) => {
 }
 exports.getTermsByType = async (req, res) => {
         try {
-                const findPrivacy = await privacy.find({ type: req.params.type }).select('-privacy');
+                const findPrivacy = await privacy.find({ type: req.params.type, typeOf: "terms" }).select('-privacy');
                 if (findPrivacy.length > 0) {
                         return res.status(200).json({ status: 200, message: 'Data found for the specified type', data: findPrivacy });
                 } else {
@@ -460,11 +460,11 @@ exports.DeleteTerms = async (req, res) => {
 }
 exports.addPrivacy = async (req, res) => {
         try {
-                const data = await privacy.findOne({ privacy: req.body.privacy, type: req.body.type });
+                const data = await privacy.findOne({ type: req.body.type, typeOf: "privacy" });
                 if (data) {
                         return res.status(200).json({ status: 200, message: 'Data already exit.', data: data });
                 }
-                const privacyData = await privacy.create({ privacy: req.body.privacy, type: req.body.type });
+                const privacyData = await privacy.create({ privacy: req.body.privacy, type: req.body.type, typeOf: "privacy" });
                 if (privacyData) {
                         return res.status(200).json({ status: 200, message: "Privacy added successfully", data: privacyData });
                 }
@@ -475,7 +475,7 @@ exports.addPrivacy = async (req, res) => {
 };
 exports.getPrivacyByType = async (req, res) => {
         try {
-                const findPrivacy = await privacy.find({ type: req.params.type }).select('-terms');;
+                const findPrivacy = await privacy.find({ type: req.params.type, typeOf: "privacy" }).select('-terms');;
                 if (findPrivacy.length > 0) {
                         return res.status(200).json({ status: 200, message: 'Data found for the specified type', data: findPrivacy });
                 } else {
@@ -488,7 +488,7 @@ exports.getPrivacyByType = async (req, res) => {
 };
 exports.getPrivacy = async (req, res) => {
         try {
-                const data = await privacy.find().select('-terms');
+                const data = await privacy.find({ typeOf: "privacy" })
                 if (data.length > 0) {
                         return res.status(200).json({ status: 200, message: 'Data found', data: data });
                 } else {
@@ -2528,11 +2528,34 @@ exports.assignDriverOnSettleBooking = async (req, res) => {
 };
 exports.getBooking = async (req, res) => {
         try {
-                const booking = await Booking.find().populate('userId driver genderCategory car superCar serviceCategory');
-                if (booking.length > 0) {
-                        return res.status(200).json({ status: 200, message: 'Booking found successfully', data: booking });
+                if (req.query.status == 'complete') {
+                        const booking = await Booking.find({ status: 'complete' }).populate('userId driver genderCategory car superCar serviceCategory');
+                        if (booking.length > 0) {
+                                return res.status(200).json({ status: 200, message: 'Booking found successfully', data: booking });
+                        } else {
+                                return res.status(404).json({ status: 404, message: 'Booking not found.', data: booking });
+                        }
+                } else if (req.query.status == 'cancel') {
+                        const booking = await Booking.find({ status: 'cancel' }).populate('userId driver genderCategory car superCar serviceCategory');
+                        if (booking.length > 0) {
+                                return res.status(200).json({ status: 200, message: 'Booking found successfully', data: booking });
+                        } else {
+                                return res.status(404).json({ status: 404, message: 'Booking not found.', data: booking });
+                        }
+                } else if (req.query.status == 'Schedule') {
+                        const booking = await Booking.find({ status: { $ne: ['complete', 'cancel'] } }).populate('userId driver genderCategory car superCar serviceCategory');
+                        if (booking.length > 0) {
+                                return res.status(200).json({ status: 200, message: 'Booking found successfully', data: booking });
+                        } else {
+                                return res.status(404).json({ status: 404, message: 'Booking not found.', data: booking });
+                        }
                 } else {
-                        return res.status(404).json({ status: 404, message: 'Booking not found.', data: booking });
+                        const booking = await Booking.find({}).populate('userId driver genderCategory car superCar serviceCategory');
+                        if (booking.length > 0) {
+                                return res.status(200).json({ status: 200, message: 'Booking found successfully', data: booking });
+                        } else {
+                                return res.status(404).json({ status: 404, message: 'Booking not found.', data: booking });
+                        }
                 }
         } catch (error) {
                 console.error(error);
@@ -2541,7 +2564,7 @@ exports.getBooking = async (req, res) => {
 };
 exports.getBookingById = async (req, res) => {
         try {
-                const findPrivacy = await Booking.findById({ _id: req.params.id }).populate('userId driver genderCategory car superCar serviceCategory');
+                const findPrivacy = await Booking.findById({ _id: req.params.bookingId }).populate('userId driver genderCategory car superCar serviceCategory vehicleAmbulance');
                 if (findPrivacy) {
                         return res.status(200).json({ status: 200, message: 'Data found for the specified type', data: findPrivacy });
                 } else {
@@ -2554,7 +2577,7 @@ exports.getBookingById = async (req, res) => {
 };
 exports.getSettleBookingById = async (req, res) => {
         try {
-                const findPrivacy = await settleBooking.findById({ _id: req.params.id }).populate('user driver');
+                const findPrivacy = await settleBooking.findById({ _id: req.params.bookingId }).populate('user driver');
                 if (findPrivacy) {
                         return res.status(200).json({ status: 200, message: 'Data found for the specified type', data: findPrivacy });
                 } else {
@@ -2670,11 +2693,19 @@ exports.getAllBookingTransaction = async (req, res) => {
 };
 exports.getAllWalletTransaction = async (req, res) => {
         try {
-                const acceptedOrders = await transactionModel.find({}).populate("user");
-                if (acceptedOrders.length == 0) {
-                        return res.status(404).json({ status: 404, message: "Data not found", data: {} });
+                if (req.query.role != (null || undefined)) {
+                        const acceptedOrders = await transactionModel.find({ role: req.query.role }).populate("user");
+                        if (acceptedOrders.length == 0) {
+                                return res.status(404).json({ status: 404, message: "Data not found", data: {} });
+                        }
+                        return res.status(200).json({ status: 200, message: "Data found", data: acceptedOrders });
+                } else {
+                        const acceptedOrders = await transactionModel.find({}).populate("user");
+                        if (acceptedOrders.length == 0) {
+                                return res.status(404).json({ status: 404, message: "Data not found", data: {} });
+                        }
+                        return res.status(200).json({ status: 200, message: "Data found", data: acceptedOrders });
                 }
-                return res.status(200).json({ status: 200, message: "Data found", data: acceptedOrders });
         } catch (error) {
                 console.error("Error:", error);
                 return res.status(500).json({ status: 500, message: "Internal server error", data: error.message, });

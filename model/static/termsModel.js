@@ -7,6 +7,10 @@ const termsSchema = mongoose.Schema({
     privacy: {
         type: String
     },
+    typeOf: {
+        type: String,
+        enum: ['privacy', 'terms']
+    },
     type: {
         type: String,
         enum: ['vendor', 'user', 'driver']

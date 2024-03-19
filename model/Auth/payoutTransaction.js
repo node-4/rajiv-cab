@@ -5,6 +5,9 @@ const DocumentSchema = schema({
         accountNumber: {
                 type: String
         },
+        id: {
+                type: String,
+        },
         ifsc: {
                 type: String
         },
@@ -25,6 +28,10 @@ const DocumentSchema = schema({
         },
         screenShot: {
                 type: String
+        },
+        amount: {
+                type: Number,
+                required: true
         },
         transactionType: {
                 type: String,
