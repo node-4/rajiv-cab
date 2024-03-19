@@ -248,7 +248,7 @@ exports.getBooking = async (req, res) => {
 };
 exports.getBookingById = async (req, res) => {
     try {
-        const bookingData = await Booking.findOne({ _id: req.params.bookingId }).populate("car driver genderCategory vehicleAmbulance superCar serviceCategory").populate("driver");
+        const bookingData = await Booking.findOne({ _id: req.params.bookingId }).populate("userId car driver genderCategory vehicleAmbulance superCar serviceCategory");
         if (!bookingData) {
             return res.status(404).json({ status: 404, message: 'Bokking data not found', data: {} });
         }
