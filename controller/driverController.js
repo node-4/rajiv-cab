@@ -184,6 +184,7 @@ exports.documentDriverDetail = async (req, res) => {
                                 user.driverDocument = detail._id;
                                 user.driverVehicleCategory = req.body.driverVehicleCategory;
                                 user.type = data12.type;
+                                user.isDriverDocument = true;
                                 await user.save();
                                 return res.status(200).json({ status: 200, message: "Driver Details added successfully.", data: detail, });
                         }
@@ -197,6 +198,7 @@ exports.documentDriverDetail = async (req, res) => {
                                 user.driverDocument = detail._id;
                                 user.driverVehicleCategory = req.body.driverVehicleCategory;
                                 user.type = data12.type;
+                                user.isDriverDocument = true;
                                 await user.save();
                                 return res.status(200).json({ status: 200, message: "Driver Details added successfully.", data: detail, });
                         }
@@ -304,11 +306,21 @@ exports.latestBooking = async (req, res) => {
 };
 exports.acceptBooking = async (req, res) => {
         try {
+                let findDriver = await User.findOne({ _id: req.user.id });
+                if (!findDriver) {
+                        return res.status(404).send({ status: 404, message: "user not found ", data: {} });
+                }
                 const booking = await Booking.findOne({ _id: req.params.bookingId, }).populate({ path: 'userId', select: 'mobileNumber' });
                 if (!booking) {
                         return res.status(404).json({ status: 404, message: "Data not found", data: {} });
                 }
+                let findUser = await User.findOne({ _id: booking.userId });
+                if (!findUser) {
+                        return res.status(404).send({ status: 404, message: "user not found ", data: {} });
+                }
                 const updatedbooking = await Booking.findByIdAndUpdate({ _id: booking._id }, { $set: { driver: req.user.id, status: "accepted" } }, { new: true });
+                const updatedbooking1 = await User.findByIdAndUpdate({ _id: findDriver._id }, { $set: { totalBooking: findDriver.totalBooking + 1 } }, { new: true });
+                const updatedbooking2 = await User.findByIdAndUpdate({ _id: findUser._id }, { $set: { totalBooking: findUser.totalBooking + 1 } }, { new: true });
                 return res.status(200).json({ status: 200, message: "User booking accepted successfully", data: updatedbooking, });
         } catch (error) {
                 console.error("Error:", error);
@@ -345,7 +357,7 @@ exports.bookingPayment = async (req, res) => {
                                         adminCommission = (findCommission.adminCommission * booking.totalPrice) / 100;
                                         driverCommission = (findCommission.driverCommission * booking.totalPrice) / 100;
                                 }
-                                const updatedbooking = await Booking.findByIdAndUpdate({ _id: booking._id }, { $set: { isCommission: true, paymentMode: "cash" } }, { new: true });
+                                const updatedbooking = await Booking.findByIdAndUpdate({ _id: booking._id }, { $set: { isCommission: true, paymentMode: "cash", adminAmount: adminCommission, driverAmount: driverCommission, } }, { new: true });
                                 if (updatedbooking) {
                                         const user = await User.findById({ _id: booking.driver });
                                         if (user) {
@@ -375,7 +387,7 @@ exports.bookingPayment = async (req, res) => {
                                         adminCommission = (findCommission.adminCommission * booking.totalPrice) / 100;
                                         driverCommission = (findCommission.driverCommission * booking.totalPrice) / 100;
                                 }
-                                const updatedbooking = await Booking.findByIdAndUpdate({ _id: booking._id }, { $set: { isCommission: true, paymentMode: "upi" } }, { new: true });
+                                const updatedbooking = await Booking.findByIdAndUpdate({ _id: booking._id }, { $set: { isCommission: true, paymentMode: "upi", adminAmount: adminCommission, driverAmount: driverCommission } }, { new: true });
                                 if (updatedbooking) {
                                         const user = await User.findById({ _id: booking.driver });
                                         if (user) {
@@ -578,7 +590,7 @@ exports.getSettleBookingById = async (req, res) => {
 };
 exports.getDriverVehicleCategory = async (req, res) => {
         try {
-                const data = await driverVehicleCategory.find();
+                const data = await driverVehicleCategory.find().populate('vehicleAmbulance superCar vehicle');
                 if (data.length > 0) {
                         return res.status(200).json({ status: 200, message: 'Data found', data: data });
                 } else {

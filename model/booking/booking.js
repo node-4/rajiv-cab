@@ -123,6 +123,14 @@ const userLocationSchema = new mongoose.Schema({
   totalPrice: {
     type: String,
   },
+  adminAmount: {
+    type: Number,
+    default: 0
+  },
+  driverAmount: {
+    type: Number,
+    default: 0
+  },
   isCommission: {
     type: Boolean,
     default: false

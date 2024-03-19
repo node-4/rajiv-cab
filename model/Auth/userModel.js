@@ -8,6 +8,10 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "DriverDetail",
   },
+  isDriverDocument: {
+    type: Boolean,
+    default: false,
+  },
   type: {
     type: String,
     enum: ["vehicle", "superCar", "vehicleAmbulance"]
@@ -73,6 +77,10 @@ const userSchema = new mongoose.Schema({
     default: 0,
   },
   adminCash: {
+    type: Number,
+    default: 0,
+  },
+  totalBooking: {
     type: Number,
     default: 0,
   },

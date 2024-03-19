@@ -792,7 +792,7 @@ exports.addSuperCar = async (req, res) => {
 };
 exports.getSuperCarById = async (req, res) => {
         try {
-                const pricing = await superCar.findById(req.params.id).populate("serviceCategory")
+                const pricing = await superCar.findById(req.params.id).populate("superCarPricing")
                 if (!pricing) {
                         return res.status(404).json({ success: false, error: "Pricing not found" });
                 }
@@ -2166,7 +2166,7 @@ exports.deleteOutStationPricing = async (req, res) => {
 };
 exports.getOutStationPricingByDistance = async (req, res) => {
         try {
-                const { hr, type, distanceInKm, city, vehicle } = req.body;
+                const { hr, type, distanceInKm, city } = req.body;
                 console.log(req.body)
                 const userId = req.user;
                 const user = await User.findById(userId);
@@ -2177,23 +2177,33 @@ exports.getOutStationPricingByDistance = async (req, res) => {
                 if (!findPrivacy) {
                         return res.status(404).json({ success: false, message: 'City not found' });
                 }
-                const allPricingDetails = await outStationPricing.findOne({ city: findPrivacy._id, vehicle, type: type }).populate('vehicle');
+                const allPricingDetails = await outStationPricing.find({ city: findPrivacy._id, type: type }).populate('vehicle');
                 if (!allPricingDetails || allPricingDetails.length === 0) {
                         return res.status(404).json({ success: false, message: 'No pricing details found' });
                 } else {
-                        let totalPrice = allPricingDetails.price, onBaseOff;
-                        if (distanceInKm > allPricingDetails.kmLimit) {
-                                let kmAmount = allPricingDetails.kmPrice * (distanceInKm - allPricingDetails.kmLimit);
-                                totalPrice += kmAmount;
-                                onBaseOff = "km";
-                        } else if (hr > allPricingDetails.hrLimit) {
-                                totalPrice += allPricingDetails.hrPrice * (hr - allPricingDetails.hrLimit);
-                                onBaseOff = "hr";
-                        } else {
-                                totalPrice = totalPrice;
-                                onBaseOff = "noOne";
+                        let data = [];
+                        for (let i = 0; i < allPricingDetails.length; i++) {
+                                let totalPrice = allPricingDetails[i].price, onBaseOff;
+                                if (distanceInKm > allPricingDetails[i].kmLimit) {
+                                        let kmAmount = allPricingDetails[i].kmPrice * (distanceInKm - allPricingDetails[i].kmLimit);
+                                        totalPrice += kmAmount;
+                                        onBaseOff = "km";
+                                } else if (hr > allPricingDetails[i].hrLimit) {
+                                        totalPrice += allPricingDetails[i].hrPrice * (hr - allPricingDetails[i].hrLimit);
+                                        onBaseOff = "hr";
+                                } else {
+                                        totalPrice = totalPrice;
+                                        onBaseOff = "noOne";
+                                }
+                                let obj = {
+                                        onBaseOff,
+                                        totalPrice,
+                                        distanceInKm,
+                                        vehicle: allPricingDetails[i].vehicle
+                                }
+                                data.push(obj)
                         }
-                        return res.status(200).json({ success: true, message: 'Prices calculated successfully', vehicle: allPricingDetails.vehicle, distanceInKm, totalPrice, onBaseOff });
+                        return res.status(200).json({ success: true, message: 'Prices calculated successfully', data: data });
                 }
         } catch (error) {
                 console.error(error);

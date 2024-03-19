@@ -103,7 +103,11 @@ exports.updateProfile = async (req, res) => {
         user.address = address;
         user.gender = gender;
         user.birthday = birthday;
-        user.category = category;
+        if (req.file) {
+            user.profilePicture = req.file.path;
+        } else {
+            user.profilePicture = user.profilePicture;
+        }
         await user.save();
         return res.json({ message: "User profile updated successfully", user });
     } catch (error) {
@@ -244,7 +248,7 @@ exports.getBooking = async (req, res) => {
 };
 exports.getBookingById = async (req, res) => {
     try {
-        const bookingData = await Booking.findOne({ _id: req.params.bookingId }).populate("car").populate("driver");
+        const bookingData = await Booking.findOne({ _id: req.params.bookingId }).populate("car driver genderCategory vehicleAmbulance superCar serviceCategory").populate("driver");
         if (!bookingData) {
             return res.status(404).json({ status: 404, message: 'Bokking data not found', data: {} });
         }

@@ -1,12 +1,18 @@
 const express = require("express");
 const userController = require("../controller/userController");
 const authJwt = require("../middleware/authJwt");
+const multer = require("multer");
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const cloudinary = require("cloudinary").v2;
+cloudinary.config({ cloud_name: "dtijhcmaa", api_key: "624644714628939", api_secret: "tU52wM1-XoaFD2NrHbPrkiVKZvY", });
+const storage = new CloudinaryStorage({ cloudinary: cloudinary, params: { folder: "images/image", allowed_formats: ["jpg", "jpeg", "png", "PNG", "xlsx", "xls", "pdf", "PDF"], }, });
+const upload = multer({ storage: storage });
 module.exports = (app) => {
   app.post('/api/v1/user/register', userController.registerUser);
   app.post('/api/v1/user/verify/otp', userController.verifyOtp);
   app.post('/api/v1/user/login', userController.loginUser);
   app.get('/api/v1/user/me', authJwt.verifyToken, userController.getUserDetails);
-  app.put('/api/v1/user/detail', authJwt.verifyToken, userController.updateProfile);
+  app.put('/api/v1/user/detail', authJwt.verifyToken, upload.single('profilePicture'), userController.updateProfile);
   app.post("/api/v1/user/createBooking", authJwt.verifyToken, userController.createBooking);
   app.post("/api/v1/user/createAmbulanceBooking", authJwt.verifyToken, userController.createAmbulanceBooking);
   app.post("/api/v1/user/createSettleBooking", authJwt.verifyToken, userController.createSettleBooking);
