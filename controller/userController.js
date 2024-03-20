@@ -187,7 +187,7 @@ exports.createSuperCarBooking = async (req, res) => {
         }
         totalCharges = pricingDetails.price;
         let bookingId = await reffralCode();
-        const booking = await Booking.create({ userId: user._id, bookingId, current, superCar: pricingDetails.superCar, type: "superCar", serviceType: "superCar", time: time, drop, date, totalPrice: totalCharges });
+        const booking = await Booking.create({ userId: user._id, bookingId, current, superCar: pricingDetails._id, type: "superCar", serviceType: "superCar", time: time, drop, date, totalPrice: totalCharges });
         return res.status(201).json(booking);
     } catch (error) {
         console.error(error);
@@ -415,8 +415,7 @@ exports.createOutStationBooking = async (req, res) => {
                 totalPrice,
                 type: "Basic",
                 serviceType: "outOfStation",
-                additionalCharges,
-                price: totalCharges
+                price: totalPrice
             });
             return res.status(201).json(booking);
         }
