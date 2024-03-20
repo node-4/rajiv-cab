@@ -174,6 +174,19 @@ exports.getSettleBooking = async (req, res) => {
         return res.status(500).json({ status: 500, message: 'Server error', data: error });
     }
 };
+exports.getSettleBookingById = async (req, res) => {
+    try {
+        const findPrivacy = await settleBooking.findById({ _id: req.params.bookingId }).populate("driver car");
+        if (findPrivacy) {
+            return res.status(200).json({ status: 200, message: 'Data found for the specified type', data: findPrivacy });
+        } else {
+            return res.status(404).json({ status: 404, message: 'Data not found for the specified type', data: {} });
+        }
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ status: 500, message: 'Server error', data: error });
+    }
+};
 exports.createSuperCarBooking = async (req, res) => {
     try {
         const { date, current, drop, time, superCarPricingId } = req.body;
