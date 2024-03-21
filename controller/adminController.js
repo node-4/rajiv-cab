@@ -186,9 +186,15 @@ exports.updateCategory = async (req, res) => {
                 if (!data) {
                         return res.status(404).json({ status: 404, message: "category not found ", category: {} })
                 }
+                let isDiscount;
+                if (req.body.isDiscount != (null || undefined)) {
+                        isDiscount = req.body.isDiscount
+                } else {
+                        isDiscount = data.isDiscount
+                }
                 let obj = {
                         category: req.body.category || data.category,
-                        isDiscount: req.body.isDiscount || data.isDiscount,
+                        isDiscount: isDiscount,
                         discountPer: req.body.discountPer || data.discountPer,
                 }
                 const UpdatedCategory = await category.findOneAndUpdate({ _id: data._id }, { $set: obj }, { new: true })
@@ -1550,15 +1556,15 @@ exports.updateHourlyPricing = async (req, res) => {
         if (!hourly) {
                 return res.status(404).json({ message: "HourlyPricing Not Found", status: 404, data: {} });
         }
-        let vehicle, city;
+        let vehicle1, city;
         if (req.body.vehicle != (null || undefined)) {
                 const findPrivacy = await vehicle.findById({ _id: req.body.vehicle });
                 if (!findPrivacy) {
                         return res.status(404).json({ status: 404, message: 'Vehicle not found for the specified type', data: {} });
                 }
-                vehicle = findPrivacy._id;
+                vehicle1 = findPrivacy._id;
         } else {
-                vehicle = hourly.vehicle;
+                vehicle1 = hourly.vehicle;
         }
         if (req.body.city != (null || undefined)) {
                 const findPrivacy2 = await cityModel.findById({ _id: req.body.city });
@@ -1569,11 +1575,11 @@ exports.updateHourlyPricing = async (req, res) => {
         } else {
                 city = hourly.city;
         }
-        let findHourlyPricing = await hourlyModel.findOne({ _id: { $ne: hourly._id }, km: req.body.km, hours: req.body.hours, city: city, vehicle: vehicle });
+        let findHourlyPricing = await hourlyModel.findOne({ _id: { $ne: hourly._id }, km: req.body.km, hours: req.body.hours, city: city, vehicle: vehicle1 });
         if (findHourlyPricing) {
                 return res.status(409).json({ message: "HourlyPricing already exit.", status: 404, data: {} });
         }
-        hourly.vehicle = vehicle;
+        hourly.vehicle = vehicle1;
         hourly.city = city;
         hourly.km = req.body.km || hourly.km;
         hourly.hours = req.body.hours || hourly.hours;
