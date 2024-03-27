@@ -303,6 +303,9 @@ exports.createBooking = async (req, res) => {
         if (!findPrivacy2) {
             return res.status(404).json({ status: 404, message: 'City not found', data: {} });
         }
+        if (findPrivacy2.limit < distance) {
+            return res.status(404).json({ status: 404, message: 'City limit is cross so go to outStation.', data: {} });
+        }
         let pricingDetails = await basePricing.findOne({ vehicle: carId._id, city: findPrivacy2._id });
         if (!pricingDetails) {
             return res.status(404).json({ success: false, message: 'No pricing details found for the selected car type' });
