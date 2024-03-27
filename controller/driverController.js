@@ -20,6 +20,7 @@ exports.socialLogin = async (req, res) => {
                         return res.status(200).json({ status: 200, msg: "Login successful", userId: user._id, token: token, });
                 } else {
                         req.body.role = "driver";
+                        req.body.refferalCode = await reffralCode();
                         const newUser = await User.create(req.body);
                         if (newUser) {
                                 const token = jwt.sign({ id: newUser._id }, JWTkey);
@@ -79,10 +80,12 @@ exports.loginDriver = async (req, res) => {
                 let user = await User.findOne({ mobileNumber, role: "driver" });
                 if (!user) {
                         const otp = randomatic("0", 4);
+                        let refferalCode = await reffralCode();
                         user = new User({
                                 mobileNumber,
                                 role: "driver",
                                 otp,
+                                refferalCode
                         });
                         await user.save();
                         return res.json({ message: "OTP generated and sent to the user", user });
@@ -117,7 +120,7 @@ exports.resendOTP = async (req, res) => {
 };
 exports.getDriverDetails = async (req, res) => {
         try {
-                const user = await User.findById(req.user.id).populate({ path: 'driverVehicleCategory', populate: { path: 'vehicle' } });
+                const user = await User.findById(req.user.id).populate({ path: 'driverVehicleCategory', populate: [{ path: 'vehicle' }, { path: 'superCar' }, { path: 'vehicleAmbulance' }] });
                 if (!user) {
                         return res.status(404).send({ status: 404, message: "user not found ", data: {} });
                 } else {
@@ -278,21 +281,21 @@ exports.latestBooking = async (req, res) => {
                                 return res.status(401).json({ status: 401, message: "First add vehicleCategory", data: {} });
                         }
                         if (user.type == "vehicleAmbulance") {
-                                const latestBookings = await Booking.find({ status: "pending", vehicleAmbulance: user.driverVehicleCategory.vehicleAmbulance }).populate('userId car').sort({ createdAt: -1 });
+                                const latestBookings = await Booking.find({ status: "pending", vehicleAmbulance: user.driverVehicleCategory.vehicleAmbulance }).populate('userId car vehicleAmbulance superCar').sort({ createdAt: -1 });
                                 if (latestBookings.length == 0) {
                                         return res.status(404).json({ status: 404, message: "Data not found", data: {} });
                                 }
                                 return res.status(200).json({ status: 200, message: "Data found", data: latestBookings });
                         }
                         if (user.type == "superCar") {
-                                const latestBookings = await Booking.find({ status: "pending", superCar: user.driverVehicleCategory.superCar }).populate('userId car').sort({ createdAt: -1 });
+                                const latestBookings = await Booking.find({ status: "pending", superCar: user.driverVehicleCategory.superCar }).populate('userId car vehicleAmbulance superCar').sort({ createdAt: -1 });
                                 if (latestBookings.length == 0) {
                                         return res.status(404).json({ status: 404, message: "Data not found", data: {} });
                                 }
                                 return res.status(200).json({ status: 200, message: "Data found", data: latestBookings });
                         }
                         if (user.type == "vehicle") {
-                                const latestBookings = await Booking.find({ status: "pending", car: user.driverVehicleCategory.vehicle }).populate('userId car').sort({ createdAt: -1 });
+                                const latestBookings = await Booking.find({ status: "pending", car: user.driverVehicleCategory.vehicle }).populate('userId car vehicleAmbulance superCar').sort({ createdAt: -1 });
                                 if (latestBookings.length == 0) {
                                         return res.status(404).json({ status: 404, message: "Data not found", data: {} });
                                 }
@@ -521,7 +524,7 @@ exports.getBookingByDate = async (req, res) => {
                 const selectedDate = new Date(req.params.selectedDate);
                 const startDate = new Date(selectedDate.setHours(0, 0, 0, 0));
                 const endDate = new Date(selectedDate.setHours(23, 59, 59, 999));
-                const orders = await Booking.find({ otpVerifiedAt: { $gte: startDate, $lte: endDate, }, });
+                const orders = await Booking.find({ otpVerifiedAt: { $gte: startDate, $lte: endDate, }, }).populate('userId car vehicleAmbulance superCar');
                 if (orders.length == 0) {
                         return res.status(404).json({ status: 404, message: "Data not found", data: {} });
                 }

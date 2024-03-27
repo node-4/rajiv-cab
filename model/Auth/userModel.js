@@ -19,6 +19,10 @@ const userSchema = new mongoose.Schema({
   mobileNumber: {
     type: String,
   },
+  refferalCode: {
+    type: String,
+    default: ""
+  },
   altMobileNumber: {
     type: String,
   },

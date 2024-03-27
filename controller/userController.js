@@ -63,7 +63,8 @@ exports.loginUser = async (req, res) => {
         let user = await User.findOne({ mobileNumber, role: "user" });
         if (!user) {
             const otp = randomatic("0", 4);
-            user = new User({ mobileNumber, otp, });
+            let refferalCode = await reffralCode();
+            user = new User({ mobileNumber, otp, refferalCode });
             await user.save();
             return res.json({ message: "OTP generated and sent to the user", user });
         } else {
