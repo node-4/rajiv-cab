@@ -441,7 +441,6 @@ exports.createOutStationBooking = async (req, res) => {
         return res.status(500).json({ status: 500, message: 'Server error', data: error });
     }
 };
-/////////////////////////////// pending check and update //////////////////////////
 exports.popularLocation = async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
@@ -458,6 +457,7 @@ exports.popularLocation = async (req, res) => {
         return res.status(500).json({ status: 500, message: 'Server error', data: error });
     }
 };
+/////////////////////////////// pending check and update //////////////////////////
 exports.compareCars = async (req, res) => {
     try {
         const userLatitude = parseFloat(req.params.latitude);

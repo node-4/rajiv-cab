@@ -27,8 +27,8 @@ module.exports = (app) => {
   app.post('/api/v1/user/addMoney', authJwt.verifyToken, userController.addMoney);
   app.get('/api/v1/user/getWallet', authJwt.verifyToken, userController.getWallet);
   app.post('/api/v1/user/removeMoney', authJwt.verifyToken, userController.removeMoney);
-  /////////////////////////////// pending check and update //////////////////////////
   app.get("/api/v1/user/popularLocation", authJwt.verifyToken, userController.popularLocation);
+  /////////////////////////////// pending check and update //////////////////////////
   app.get("/api/v1/user/compare/car/:latitude/:longitude", userController.compareCars);
   app.get("/api/v1/user/get/order/:latitude/:longitude", authJwt.verifyToken, userController.getOrder);
   app.post("/api/v1/user/sendSosRequest", authJwt.verifyToken, userController.sendSosRequest);
